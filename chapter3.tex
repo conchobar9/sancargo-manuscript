@@ -1,0 +1,1396 @@
+\chapter{Methodology}
+
+\section{Conceptual Framework}
+%\begin{figure}[htbp] % 'h' means "here" (suggested placement)
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.54\textwidth]{images/conceptual.png} % Adjust width as needed
+    \caption{Conceptual Framework}
+    \label{fig:conceptual}
+\end{figure}
+
+This ridesharing application is tailored for student passengers and drivers, utilizing a comprehensive matching algorithm that considers location, destination, and mood compatibility. The application is built for both iOS and Android devices. Core functionalities include real-time GPS tracking, secure university-based authentication, and push notifications for ride status updates.
+The backend is powered by Firebase Firestore, offering a scalable, real-time database for managing ride records, user profiles, and location updates. Firebase Authentication ensures only verified university users can access the platform, establishing a safe and closed community. Meanwhile, the CES points algorithm is embedded to reward student drivers with non-monetary incentives based on completed rides, fostering engagement and volunteerism.
+
+Maps are drawn with the Google Maps SDK, while routes are computed on the server: a Cloud Function calls the Google Routes API for traffic-aware routing, so the API key is never shipped inside the app, and the public OSRM service serves as an automatic fallback. Firebase Cloud Functions also classify trip direction, create ride requests, run ride matching and Ride Token calculation, refresh the fuel price, and send push notifications, so that sensitive logic executes securely on the server side. Firebase App Check is activated in the app so that requests can be tied to the genuine application.
+An additional layer of personalization is introduced through a Mood-Based AI system. This system classifies the in-car music environment into categories like Lively, Chill, or Quiet using on-device audio feature extraction and a lightweight machine learning model. Passengers indicate the moods they accept when they request a ride, and the system incorporates this input during the driver-passenger matching process. This enhances comfort, improves rider satisfaction, and supports better ride experience alignment.
+For real-time communication, Firebase Cloud Messaging facilitates immediate and reliable exchange of information between riders and drivers, such as ride requests and acceptance confirmations. 
+
+
+\section{System Features}
+The proposed ridesharing platform integrates a robust set of features tailored to the specific needs of USC students. These features aim to optimize transportation efficiency, promote environmental sustainability, and ensure user safety and accountability. Below is an overview of the system’s core functionalities:
+
+\begin{itemize}
+    \item \textbf{Ride Sharing}: The application allows users to participate in shared rides with others heading in similar directions. This not only reduces individual travel costs but also contributes to lessening the environmental footprint of daily commutes.
+    
+    \item \textbf{Proximity-Based Trip Classification}: Using a defined proximity zone centered around USC Talamban Campus, the system automatically classifies whether a ride is inbound (to TC) or outbound (leaving TC). This classification helps streamline route planning and passenger-driver matching.
+    
+    \item \textbf{Optimized Route Generation}: The application uses advanced routing algorithms, supported by the Google Maps API, to generate efficient travel paths. These routes are dynamic and can be recalculated if the driver deviates or if traffic or ride conditions change.
+    
+    \item \textbf{Pickup Point Detection}: Rather than scanning arbitrary locations, the system checks only designated pickup points along a driver's route. This ensures that matches are efficient and that drivers are not diverted from their path unnecessarily.
+    
+    \item \textbf{Real-Time Location Tracking}: During an active trip, the passenger can follow the assigned driver's location on the map in real time, and the driver sees the passenger's pickup point. This improves safety, communication, and trip coordination.
+
+    \item \textbf{Push Notifications and In-App Chat}: Passengers and drivers receive push notifications for new eligible requests, acceptance, pickup, completion, and cancellation. A matched driver and passenger can message each other inside the app, and the conversation remains available for a short period after the ride so that a pickup or a problem can still be settled.
+
+    \item \textbf{Destination Search and Early Drop-Off}: On outbound trips, a driver can type a destination (Google Places) or drop a pin on the map. A passenger who must leave the vehicle before the final drop-off can request an early drop-off, and the driver is notified.
+
+    \item \textbf{Emergency Button}: During a ride, any user can raise an alert that notifies the administrators and is logged with the user's name, role, and the date and time (Section~\ref{sec:safety}).
+    
+    \item \textbf{Record-Keeping and Monitoring}: Every ride is automatically logged with relevant data such as the driver and passenger’s identities, timestamps, chosen routes, and any notable incidents. This serves as a vital tool for both user accountability and administrative oversight.
+    
+    \item \textbf{CES Point Conversion Tracker}: For student drivers, the system tracks accumulated Ride Tokens and converts them into CES %(Community Extension Service) 
+    points. This integration incentivizes participation and rewards student drivers for their contributions.
+    
+    \item \textbf{Ride History \& Feedback}: Users can view their previous trips and are encouraged to leave reviews or report any issues. This feature enhances transparency and helps continually improve the quality of service.
+    
+    \item \textbf{Administrative Dashboard}: The backend includes a comprehensive dashboard for system administrators. It allows for registration approval, user management, report handling, review of Ride Token claims, ride log monitoring, management of the approved pickup and drop-off points, and the fuel price and semester period settings that drive the Ride Token system.
+    
+    \item \textbf{Authentication \& Access Control}: User access is secured through Firebase Authentication. Only verified USC students can register and use the application, with verification tied to official university email accounts. This control ensures a trusted community of users.
+
+    \item \textbf{Navigation Failures}:
+        \begin{itemize}
+            \item \textbf{App Crashes}: Errors are reported to Firebase Crashlytics through Flutter's error hook (\texttt{FlutterError.onError}), the platform error hook, and a guarded zone around the whole application, so that crashes and unhandled exceptions are captured for analysis. Actions that end or cancel a trip (for example, cancelling an accepted ride or terminating an active trip) are completed by Cloud Functions rather than by direct client writes, so a crash on one phone cannot leave the other user's request in an inconsistent state.
+
+            \item \textbf{Loss of Internet or Data Connection}: Flutter's \texttt{connectivity\_plus} package monitors network status, and a banner informs users when the device is offline. Cloud Firestore's built-in on-device cache keeps already-loaded data readable and holds writes made while offline until the connection returns. Steps that must be decided by the server, such as creating a ride request or accepting one, need a connection; if the call fails, the user is told and can try again. For trip direction, the app keeps a client copy of the campus geofence as an instant hint and an offline fallback (Section~\ref{sec:routing}).
+
+            \item \textbf{Low Signal Strength and Inaccuracy of the Driver's Location}: Location is requested with high accuracy through Flutter's \texttt{location} package, with a 5-second update interval. The server does not rely on the client's claims about distance: \texttt{matchRide} reads the driver's stored location and re-checks the 400~m pickup limit and the campus side itself, and the route-based filters are applied only as a display filter on the driver's screen (Section~\ref{sec:moodmatch}). Completing a trip is never blocked merely because no GPS fix is available.
+
+            \item \textbf{Unexpected Route Deviations}: Routes are obtained from the server through the \texttt{computeRouteAsia} function (Google Routes API, with OSRM as a fallback) and shown with \texttt{google\_maps\_flutter}. The app compares the driver's live location with the current route and requests a new one automatically when the driver is 75~m or more away from it, or has moved 50~m since the last calculation, no more often than once every 15 seconds. There is no manual recalculation control; the route simply follows the driver.
+        \end{itemize}
+\end{itemize}
+
+
+\section{User Roles}
+
+{
+\renewcommand{\arraystretch}{1.25}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{6.2cm}|c|c|c|}
+\caption{User Types and their Feature Access}\label{tab: user roles}\\
+\hline
+\textbf{Feature} & \textbf{Passenger} & \textbf{Driver} & \textbf{Admin} \\
+\hline
+\endfirsthead
+\multicolumn{4}{l}{\small\textit{Table 3.1 (continued)}}\\
+\hline
+\textbf{Feature} & \textbf{Passenger} & \textbf{Driver} & \textbf{Admin} \\
+\hline
+\endhead
+\hline
+\endfoot
+User Registration and Login  & \cmark & \cmark & \cmark \\ 
+        USC Email Verification  & \cmark & \cmark & \cmark \\ 
+        Profile Management  & \cmark & \cmark & \cmark \\ 
+        Request a Ride  & \cmark & \xmark & \xmark \\ 
+        Accept/Reject Ride Requests  & \xmark & \cmark & \xmark \\ 
+        Notification of Match  & \cmark & \cmark & \xmark \\ 
+        Live Ride Tracking & \cmark & \cmark & \xmark \\ 
+        Navigation Assistance (Google Maps API) & \cmark & \cmark & \xmark \\ 
+        Ride Token Earning System & \xmark & \cmark & \xmark \\ 
+        Ride Review and Rating & \cmark & \cmark & \xmark \\  
+        In-App Chat with Matched User & \cmark & \cmark & \xmark \\ 
+        Emergency Alert Button & \cmark & \cmark & \xmark \\ 
+        Mood Preference Selection & \cmark & \xmark & \xmark \\ 
+        AI Mood Detection (Music-Based) & \xmark & \cmark & \xmark \\ 
+        Mood-Based Matching System & \cmark & \cmark & \xmark \\ 
+        
+        Approve/Deny Registrations & \xmark & \xmark & \cmark \\ 
+        Manage Rides and Users & \xmark & \xmark & \cmark \\ 
+        Review Ride Token Claims & \xmark & \xmark & \cmark \\ 
+        Manage Ride Points, Fuel Price, and Semester Period & \xmark & \xmark & \cmark \\ 
+        View Ride Logs and Transaction History & \cmark & \cmark & \cmark \\ 
+        Suspend/Remove Users & \xmark & \xmark & \cmark \\ 
+        Generate User Reports & \xmark & \xmark & \cmark \\
+\end{longtable}
+}
+
+
+The system defines three main user roles: Passenger, Driver, and Admin, each with distinct permissions tailored to their specific functions within the ridesharing platform, as seen in Table~\ref{tab: user roles} and Figure~\ref{fig: use case}. All users are required to undergo USC email verification and complete the registration process, ensuring that the platform remains exclusive to the USC community. Each user can manage their personal profile and view their ride logs.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{images/use case.png}
+    \caption{Use case diagram of the ridesharing application}
+    \label{fig: use case}
+\end{figure}
+
+
+Passengers are given access to features such as requesting rides, choosing the moods and vehicle type they accept, and tracking their assigned driver in real time. They can also access navigation assistance and submit ratings and reviews after their ride experience.
+
+Drivers can accept or reject ride requests, access real-time navigation assistance, and are eligible for ride token rewards based on ride activity. Like passengers, they can also track their rides and provide feedback.
+
+Admins have a broader set of responsibilities aimed at overseeing the platform's operations. They have the ability to manage all rides and users, view logs, generate system reports, and suspend or remove users as necessary. Their access ensures that the system remains safe, organized, and accountable.
+
+This role-based access structure ensures that all users only interact with the features relevant to their purpose while maintaining a clear line of administrative oversight.
+
+\section{Software Framework and Tools}
+\label{sec:tools}
+The application follows a client-server architecture, with the mobile application serving as the frontend and Firebase handling authentication, real-time database storage, and cloud functions.  
+
+\begin{table}[htbp]
+    \centering
+    \caption{Development Tools and Technologies}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.20\textwidth}|>{\raggedright\arraybackslash}p{0.26\textwidth}|>{\raggedright\arraybackslash}p{0.45\textwidth}|}
+        \hline
+        \textbf{Component} & \textbf{Technology Used} & \textbf{Justification} \\ 
+        \hline
+        Frontend & Flutter (Dart) & Cross-platform development (iOS \& Android) \\ 
+        
+        Backend & Firebase Firestore & Stores ride requests, user information, location data, tokens, weekly fuel price data, and route history in real-time. \\ 
+
+        Authentication & Firebase Auth & Secure login with USC email verification \\ 
+        
+        Mapping \& GPS & Google Maps SDK; Google Routes API (through a Cloud Function), with OSRM as fallback; Google Places API (New) & Map display and location tracking on the device; route geometry, distance, and duration computed on the server so the API key stays out of the app; typed destination search. \\ 
+        
+        Proximity Detection \& Matching & Firebase Cloud Functions & Classify trip direction, create ride requests, perform the server-side checks when a driver accepts a request, calculate Ride Tokens, and refresh the fuel price. \\ 
+
+        Notifications & Firebase Cloud Messaging & Push alerts for requests, ride status, chat messages, and administrator decisions. \\ 
+
+        Reliability \& Security & Firebase Crashlytics, connectivity\_plus, Firebase App Check, Firebase Security Rules & Crash reporting, offline indicator, app verification, and role-based access to data and uploaded documents. \\ 
+        
+        Mood-Based AI System & TensorFlow Lite + Firebase + Librosa & Classifies music environment in the driver’s car (Lively, Chill, Quiet) using audio features and a CNN model. Matching is improved by aligning driver mood with rider preference. \\ 
+        
+        Audio Processing & Librosa (Google Colab, training) and an equivalent Dart feature extractor (on-device) & Extracts the audio features (40 MFCCs, RMS energy and onset strength) used to train the CNN and, on the device, to classify the ride audio in real time. \\      
+        
+        Model Deployment & TensorFlow Lite (model bundled with the app) & Allows lightweight, on-device inference for real-time classification. The model ships inside the application, so updating it requires an app update. \\ 
+
+                Pre-release Distribution & Firebase App Distribution & Delivers Android test builds to invited UAT testers by email, without an app store listing (Section~\ref{sec:distribution}). Android Studio and Xcode build and install the Android and iOS apps directly on testing devices (Section~\ref{sec:install}). \\
+
+        \hline
+    \end{tabular}
+    \label{tab: tools}
+\end{table}
+
+To deliver a responsive and seamless ridesharing experience tailored for students of the University of San Carlos, this study integrates a carefully curated set of development tools and technologies. Each technology is selected to address a specific layer of the application’s architecture, spanning frontend development, real-time data handling, secure user authentication, GPS navigation, and server-side logic execution.
+
+At the core of the application's user interface is Flutter (Dart), a modern UI toolkit that allows for cross-platform development on both Android and iOS using a single codebase. Flutter was chosen for its fast development cycle, customizable widgets, and its ability to provide a consistent and visually appealing experience aligned with the USC brand identity. This approach ensures that all student users, regardless of device, enjoy the same quality of interaction.
+
+Supporting the frontend is a robust backend powered by Firebase Firestore, a scalable NoSQL cloud database. Firestore handles the storage of ride requests, driver and rider information, geolocation logs, route histories, and the in-app Ride Token system in real-time. Weekly Cebu City fuel prices from the Department of Energy (DOE) are retrieved and stored in Firestore by a scheduled Cloud Function for use in the Ride Token computation (Section~\ref{sec:tokens}). Its ability to synchronize data instantly across users ensures that ride statuses, location updates, and match notifications are reflected without delay, creating a highly responsive environment.
+
+To secure access to the application and verify user authenticity, Firebase Authentication is implemented. This system is configured to support university email logins, ensuring that only officially enrolled USC students can register and participate. By enforcing this restriction, the application fosters a safe and trusted community for peer-to-peer ridesharing.
+
+A critical feature of the app—navigation and route optimization—is made possible by integrating the Google Maps API. The Google Maps SDK provides real-time map rendering and location display. Routes and estimated travel times are computed by the Google Routes API, which is called only from a Cloud Function (\texttt{computeRouteAsia}) that returns just the route geometry, distance, and duration; this keeps the API key out of the app and lets routes be adjusted for live traffic. If that call is unavailable, the public OSRM service is used as an automatic fallback. Typed destination search uses the Google Places API (New) through two further Cloud Functions, again so that no key is shipped in the app, and if it fails the driver can still drop a pin on the map. Turn-by-turn navigation is handed off to the Google Maps application.
+
+To further enhance system intelligence, especially in matching riders with nearby drivers, Firebase Cloud Functions are utilized for the server-side logic. A request can only be created through the \texttt{createRideRequest} function, which determines trip direction from the passenger's pickup coordinate, because the Security Rules refuse any request written directly by a client. When a driver accepts a request, the \texttt{matchRide} function reads the request, the driver's availability record, and the pending queue for that pickup point itself and then performs the acceptance as a single transaction (Section~\ref{sec:moodmatch}). A Firestore trigger also sends a push notification when a driver's position makes a pending request eligible. This design offloads the processing burden from the client side, improves app performance, and maintains data integrity and security by executing sensitive logic on the server.
+
+Android builds for user acceptance testing are delivered through Firebase App Distribution (Section~\ref{sec:distribution}), and other builds are installed directly from Android Studio and Xcode (Section~\ref{sec:install}).
+
+
+\section{Mood-based AI Matching System}
+\label{sec:ai}
+
+A mood-based artificial intelligence (AI) is integrated into ride matching. It classifies the sound inside the driver’s vehicle on the driver’s phone, and the result is matched with the mood that the passenger prefers. It is designed to operate within mobile constraints and uses Firebase and TensorFlow Lite for deployment (Section~\ref{sec:tools} describes the backend and device architecture).
+
+\textbf{The three moods.} The AI classifies the energy level of the sound inside the vehicle into one of three levels called moods: Quiet, Chill, or Lively. In this study, mood refers to the energy level of the sound and not to the emotional state of a driver or passenger. Quiet means little or no sound. Chill means calm sound of low to moderate energy. Lively means high-energy sound. The three levels follow the arousal (energy) dimension that is used to describe music emotion~\cite{panda2023audio}. In the training clips, the median loudness is $-31.3$ dB for Quiet, $-17.8$ dB for Chill, and $-15.2$ dB for Lively (Table~\ref{tab:ai-profile}), so Chill and Lively overlap in loudness and are separated by more than loudness alone (Section~\ref{sec:ai-profile}). Passengers choose the moods they accept according to what they want from the ride: Quiet for a silent ride, for example to study or for passengers who simply like quiet rides; Chill for calm music; and Lively for high-energy music. These ride atmospheres are assumptions of the proponents, because no survey of music preferences was conducted. They are consistent with the studies reviewed in Section~\ref{sec:lit-music}~\cite{north2004uses,constine2019uber}. Each training clip was assigned to a mood from its genre or mood tags (Table~\ref{tab:ai-sources}), and the AI learned each mood from the color, loudness, and rhythm of the sound (Section~\ref{sec:ai-features}). The measured profile of each mood is reported in Section~\ref{sec:ai-profile}. Because no external experts were available, the definitions rest on published studies and on these measurements.
+
+\textbf{Why audio.} The auditory environment was chosen as the matching attribute for three reasons. First, the driver’s phone can sense it automatically while the driver is available, without extra input from the driver. Second, it can be processed on the phone, so no recording is stored or transmitted and only the resulting mood tag is saved, which fits the on-device approach reviewed in Section~\ref{sec:lit-ondevice}~\cite{zhao2022survey}. Third, a compact neural network can classify it within mobile constraints~\cite{lane2015deep}. A driver-chosen tag would be simpler, but it depends on the driver remembering to update it and reporting it honestly, whereas audio reflects what is playing at the time. The other alternatives that were weighed are listed in Section~\ref{sec:ai-choices}.
+
+\textbf{Why three moods.} The proponents weighed three levels against two levels, four or five levels, music genres, emotion categories such as happy and sad, and a continuous energy score. Three levels were chosen for four reasons.
+
+\begin{enumerate}
+    \item \textbf{A passenger must find a driver quickly.} The more moods there are, the fewer available drivers fall in each one, so the chance that at least one of them matches a passenger falls. This is the principle of thickness (Section~\ref{sec:lit-music})~\cite{roth2008market}. Table~\ref{tab:ai-chance} shows the effect when the available drivers are spread evenly over the moods and the passenger accepts one mood. The values are illustrative, since real tastes are uneven, and a passenger can also select more than one mood or No Preference, which raises the chance.
+    \item \textbf{People agree less on finer categories.} As reviewed in Section~\ref{sec:lit-music}, people agree less as mood categories become finer~\cite{hu2008mirex,gomez2019emotions}, and low agreement limits how well a model can learn. The model of this study already confuses Chill and Lively more than any other pair (Section~\ref{sec:ai-perf}), so more levels would add errors.
+    \item \textbf{Small mood sets are standard.} The studies of Section~\ref{sec:lit-music} used small sets of mood clusters~\cite{hu2008mirex,hu2007simplified}.
+    \item \textbf{Each level matches a passenger’s choice.} The three levels match a silent ride, calm music, and high-energy music. Two levels would place a silent ride and calm music together, so a passenger who wants silence could be matched with a driver who plays music.
+\end{enumerate}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Chance that a passenger finds at least one matching driver}\label{tab:ai-chance}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Moods ($k$)} & \textbf{3 drivers available} & \textbf{5 drivers available} & \textbf{10 drivers available} \\
+        \hline
+        2 & 88\% & 97\% & 99.9\% \\
+        3 (this study) & 70\% & 87\% & 98\% \\
+        5 & 49\% & 67\% & 89\% \\
+        10 (for example, genres) & 27\% & 41\% & 65\% \\
+        \hline
+    \end{tabular}
+\end{table}
+
+The chance is $1 - (1 - 1/k)^n$ for $n$ available drivers and $k$ moods.
+
+The other alternatives were rejected for specific reasons. Genres split the drivers into groups that are too small (Table~\ref{tab:ai-chance}), and a genre is not the same as energy. Emotion categories describe people, and a microphone cannot measure them. A continuous energy score is harder for a passenger to choose from, so it is left for future work.
+
+\textbf{From the idea to the build.} The moods and the reasons above are the idea of the AI. The idea sets what the AI must do: tell the three moods apart from sound alone, run on the driver’s phone without internet and without storing audio, follow the sound of the car without flickering, and never stop a ride. The rest of Section~\ref{sec:ai} shows how each need was met, in the order of the build. Figure~\ref{fig:ai-flow} shows the whole flow, and Table~\ref{tab:ai-build} lists the steps.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{images/ai_flow.png}
+    \caption{Flow of the mood AI from the microphone to the matching function.}
+    \label{fig:ai-flow}
+\end{figure}
+
+{
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{|>{\centering\arraybackslash}p{.06\textwidth}|>{\raggedright\arraybackslash}p{.30\textwidth}|>{\raggedright\arraybackslash}p{.40\textwidth}|>{\raggedright\arraybackslash}p{.12\textwidth}|}
+\caption{From the idea to the build}\label{tab:ai-build}\\
+\hline
+\textbf{Step} & \textbf{What the idea needs} & \textbf{How it was built} & \textbf{Section} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Step} & \textbf{What the idea needs} & \textbf{How it was built} & \textbf{Section} \\
+\hline
+\endhead
+\endfoot
+1 & Examples of each mood & GTZAN, MTG-Jamendo, ESC-50, and generated noise, cut into 10-second segments, labeled by genre or tag, and augmented & \ref{sec:ai-dataset}, \ref{sec:ai-augment} \\
+\hline
+2 & A description of the energy of sound that a phone can compute & A $42 \times 431$ table of color (MFCC), loudness (RMS), and rhythm (onset strength) & \ref{sec:ai-features} \\
+\hline
+3 & A classifier small enough for the phone & A CNN trained in Colab and converted to TensorFlow Lite & \ref{sec:ai-model} \\
+\hline
+4 & The same numbers on the phone as in training & A Dart feature extractor checked against Librosa & \ref{sec:ai-align} \\
+\hline
+5 & A mood that follows the sound of the car without flickering, and no stored audio & A 10-second capture every 20 seconds, the average of five readings, and a moodTag saved in Firestore & \ref{sec:ai-runtime} \\
+\hline
+6 & A use of the mood that never blocks a ride & A fail-open mood filter in matchRide & \ref{sec:moodmatch} \\
+\hline
+7 & Fixed rules for when detection and matching apply & Conditions of detection and of the driver’s acceptance (Tables~\ref{tab:ai-detect} and~\ref{tab:ai-accept}) & \ref{sec:ai-conditions} \\
+\hline
+8 & Evidence that it works & Held-out clips, nine real songs, the feature check, app tests, and the measured profile of the moods & \ref{sec:ai-eval} \\
+\hline
+9 & Reasons for each choice against its alternatives & Table~\ref{tab:ai-choices} & \ref{sec:ai-choices} \\
+\hline
+\end{longtable}
+}
+
+\textbf{Changes from the proposal.} The proposal named the high-energy mood Loud, described Loud and Chill by ranges of loudness (dB) and tempo (BPM), and set the update interval at 30 seconds. In the build, the high-energy mood is called Lively; the CNN learns the moods from labeled clips instead of fixed loudness and tempo ranges, because tempo does not separate the moods (Section~\ref{sec:ai-profile}); and the AI updates every 20 seconds (Section~\ref{sec:ai-runtime}).
+
+\subsection{Dataset Composition and Preparation}
+\label{sec:ai-dataset}
+
+The mood classification model was trained on a combination of labeled audio datasets assembled to represent the three moods. Table~\ref{tab:ai-sources} shows the sources and how their clips were assigned to each mood.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Audio clips used for each mood}\label{tab:ai-sources}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.12\textwidth}|>{\raggedright\arraybackslash}p{.62\textwidth}|>{\centering\arraybackslash}p{.10\textwidth}|}
+        \hline
+        \textbf{Mood} & \textbf{Source} & \textbf{Clips} \\
+        \hline
+        Lively & GTZAN: metal, rock, disco (300). Jamendo: tags energy, party, upbeat, powerful, action, heavy, fast, dance (300) & 600 \\
+        \hline
+        Chill & GTZAN: classical, blues, country, jazz, reggae, hip hop, pop (301). Jamendo: tags relaxing, calming, meditative, soft, peaceful, mellow, ambient, chillout (300) & 601 \\
+        \hline
+        Quiet & ESC-50: rain, wind, crickets, engine, sea waves, crackling fire, chirping birds, water drops (320). Generated traffic and cabin noise (300) & 620 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+GTZAN~\cite{tzanetakis2002}, a widely used benchmark dataset of 30-second music clips in ten genres, served as the base source for the Lively and Chill classes, consistent with its established use in CNN-based genre and mood classification research~\cite{zhang2025music,hubert2025mood}. However, GTZAN alone proved insufficient: its genre categories (metal, rock, disco) reflect an earlier era of music production and do not consistently capture contemporary genres such as trap, EDM, and modern pop. An earlier version of the model that was trained mostly on GTZAN classified none of the three Lively real-world songs correctly (Section~\ref{sec:ai-data}). To address this, tracks from MTG-Jamendo~\cite{bogdanov2019} were retrieved via its public API, filtered using mood and theme tags, and mapped to the system’s target moods. For the Quiet class, real ambient and environmental clips from ESC-50~\cite{piczak2015} were combined with synthetically generated traffic and cabin-noise samples, following prior work showing that MFCC and log-Mel features from ESC-50 are effective CNN inputs~\cite{gupta2024environment}. The eight ESC-50 categories used were rain, wind, crickets, engine, sea waves, crackling fire, chirping birds, and water drops, 40 clips each, which are non-musical sounds without a melody. Together with 240 synthetic clips of white, pink, and brown noise and 60 synthetic traffic clips, they gave 620 Quiet clips, close to the 600 and 601 clips of the other two classes. The effect of each category on the result was not tested, and some of them, such as sea waves and crackling fire, are not typical sounds of a vehicle cabin. No data set of recordings made inside vehicles could be found, and recording in a real vehicle would require leaving the engine idling for long periods, which uses fuel. The proponents therefore used synthetic cabin noise and the ESC-50 ambient sounds as an approximation of the steady, broadband sound inside a cabin, which resembles white, pink, or brown noise. This is an assumption that was not verified against real vehicle recordings (Section~\ref{sec:ai-limits}), and recording inside real vehicles is recommended for future work (Section~\ref{sec:recs}).
+
+The GTZAN genres were assigned to moods when the classifier was developed, by genre name: metal, rock, and disco to Lively, and the other seven genres to Chill. The assignment was not based on measured energy, so it is a simplification, because a genre is not the same as energy, and a genre such as hip hop or pop can be calm or energetic depending on the artist. The Jamendo tags were used as given, and no listener checked either set of labels. The effect of the genre assignment is examined in Sections~\ref{sec:ai-profile} and~\ref{sec:ai-limits}.
+
+Each source track or recording was cut to a 30-second window and segmented into three 10-second segments at 22,050 Hz in mono; the 5-second ESC-50 recordings were looped to fill the window. The 10-second segment is the length of audio that the AI reads at one time (Section~\ref{sec:ai-runtime}). To keep segments from the same recording from appearing in more than one set, whole source clips were assigned to the training, validation, and test sets before any augmentation, using a 70/15/15 split by source clip with a fixed seed. This gave 1,275 training, 273 validation, and 273 test clips across the three classes. An earlier version of the split assigned segments instead of clips, so segments of the same clip could appear in both the training and test sets. The proponents found this problem and replaced it with the split by source clip described above.
+
+\subsection{Data Augmentation}
+\label{sec:ai-augment}
+
+To offset class imbalance and limited dataset size, augmentation was applied to the training set to raise each class to 1,400 segments. This follows prior findings that augmentation substantially improves CNN performance on small audio datasets~\cite{ba2025music,salamon2017deep,lin2023cnn}. In one of these studies, a CNN sound classifier reached 63\% accuracy without augmentation and 97\% with it~\cite{lin2023cnn}. Four techniques were implemented: pitch shifting ($\pm 2$ semitones), time stretching (0.9$\times$ to 1.1$\times$), noise injection (20 to 40 dB signal-to-noise ratio), and volume scaling (0.7$\times$ to 1.3$\times$). They were chosen because they change how a clip sounds without changing its energy level, as in the augmentation set of~\cite{salamon2017deep}, and they were applied in random one- or two-technique combinations per sample, following the multi-technique approach of earlier studies~\cite{rezaul2024enhancing,koerich2021cnn}. Augmentation was applied only after the split by source clip, and every augmented segment was generated from a training segment, so no copy of a validation or test clip exists in the training data. The validation and test sets contain only unmodified audio. In total, 375 of the 4,200 training segments are augmented (140 Lively, 137 Chill, and 98 Quiet).
+
+\subsection{Feature Extraction}
+\label{sec:ai-features}
+
+The AI does not read raw audio. Using Librosa~\cite{mcfee2015librosa}, each 10-second segment is converted into a table of 42 rows of numbers, called features, measured at 431 time frames, one about every 23 milliseconds (a window of 2,048 samples that moves forward 512 samples at a time). The features describe three things about the sound: its color, its loudness, and its rhythm. The sampling rate (22,050 Hz), the window (2,048 samples), the step (512 samples), and the 128 mel bands are the default settings of Librosa~\cite{mcfee2015librosa}; the number of coefficients (40) is a choice of the proponents.
+
+\textbf{Color (MFCC).} Mel-frequency cepstral coefficients~\cite{davis1980comparison} describe how the energy of a sound is spread across frequencies in the way the human ear hears them. Each window is converted to a spectrum, the spectrum is grouped into 128 mel-scaled bands and converted to decibels, and a discrete cosine transform keeps the first 40 coefficients. This gives 40 rows.
+
+\textbf{Loudness (RMS).} Root mean square energy measures how strong the signal is in each window. Equation~(\ref{eq:rms}) gives the RMS of window $t$, where $x_t(n)$ are the $N$ samples of that window. This gives 1 row.
+
+\begin{equation}
+    RMS_t = \sqrt{\frac{1}{N}\sum_{n=0}^{N-1} x_t(n)^2}
+    \label{eq:rms}
+\end{equation}
+
+\textbf{Rhythm (onset strength).} Onset strength measures how quickly the sound changes from one window to the next, so it rises when a new beat, note, or sound begins. Equation~(\ref{eq:onset}) gives the onset strength of window $t$, where $S_t(m)$ is the mel spectrum in decibels of band $m$ and $M$ is the number of bands. Only increases are counted. This gives 1 row.
+
+\begin{equation}
+    O(t) = \frac{1}{M}\sum_{m=1}^{M} \max\left(0,\; S_t(m) - S_{t-1}(m)\right)
+    \label{eq:onset}
+\end{equation}
+
+Stacking the 40 + 1 + 1 rows gives a $42 \times 431$ matrix for every segment, which is the input of the model.
+
+\textbf{Why these features.} MFCC, RMS, and onset strength represent timbre, dynamics, and rhythm, which music-emotion research links to the energy of music (Section~\ref{sec:lit-music})~\cite{panda2023audio}. A multi-feature input follows the studies of Section~\ref{sec:lit-audio}~\cite{zhang2025music,hubert2025mood,rezaul2024enhancing}. The alternatives were a spectrogram image alone, additional descriptors such as the zero-crossing rate, and tempo in beats per minute. Tempo was not used because a computed energy score was a clearer indicator of arousal than tempo in a large study (Section~\ref{sec:lit-music})~\cite{north2018energy}, and because measuring it requires finding the beats, whereas onset strength carries rhythm information without that step. In the feature test (Section~\ref{sec:ai-compare}), MFCC alone reached 85.6\% and adding RMS raised it to 87.2\%, whereas onset strength added no measurable accuracy.
+
+\subsection{Model Architecture and Training}
+\label{sec:ai-model}
+
+The $42 \times 431$ matrices train a CNN with four convolutional blocks (32, 64, 128, and 128 filters, $3 \times 3$ kernels, ReLU activation, same padding). Each block is followed by max-pooling and batch normalization. The blocks are followed by global average pooling, dropout, a 64-unit dense layer, and a softmax output over the three classes~\cite{zhang2025music,gupta2024environment}, which gives the probability of each mood. The model is trained with the Adam optimizer and sparse categorical cross-entropy loss for up to 50 epochs, with balanced class weights, early stopping, and learning-rate reduction on plateau. Figure~\ref{fig:ai-flow}, given at the start of Section~\ref{sec:ai}, shows where the model sits in the flow of the AI.
+
+\textbf{How the network works.} A convolutional layer slides small $3 \times 3$ filters over the $42 \times 431$ feature table and responds to local patterns of color, loudness, and rhythm over time. The first layers find simple patterns and the deeper layers combine them into larger ones, which is why the number of filters grows from 32 to 128. Max-pooling keeps the strongest response in each small region and halves the table, which makes the result less sensitive to small shifts in time or frequency, and batch normalization rescales the outputs of a layer to keep training stable. Global average pooling reduces each filter to one number, which keeps the network small. Dropout switches off 30\% of the units at random during training to limit overfitting, and the softmax output turns the three final scores into probabilities that add up to one. Balanced class weights keep a class with fewer clips from being ignored, and early stopping ends training when the validation accuracy stops improving.
+
+\textbf{Why a CNN.} CNNs over MFCC-based features classify music genre~\cite{zhang2025music,koerich2021cnn}, music mood~\cite{hubert2025mood}, and environmental sound~\cite{gupta2024environment}, and a CNN of this size is small enough to run on a phone. The alternatives were rules based on loudness, rhythm, or tempo thresholds, a decision tree, logistic regression, and a random forest on hand-made summary features, and larger pretrained models. Larger models such as the transformer in~\cite{hubert2025mood} are far bigger than a CNN of about 1 MB and would strain a phone. Pretrained models were not tested. On the same test clips, no single-feature rule exceeded 61\%, and models using MFCC summaries came within about 1 to 4 points of the CNN (Section~\ref{sec:ai-compare}).
+
+\textbf{Choosing a run.} Because CNN training can converge to different local optima, training is repeated up to five times, each run using a different random seed. After each run, the model is checked on the validation set and on a four-song real-world sanity check with known expected labels. The first run that classifies all four songs correctly and has the highest validation accuracy so far is selected, and training stops; if no run meets both conditions, the run with the highest validation accuracy is kept. This is because validation accuracy alone was found insufficient to guarantee real-world generalization. In the final training, validation accuracy ranged from 82.54\% to 85.47\% across the five runs (Section~\ref{sec:ai-perf}), so a single run could have been a weak one.
+
+\textbf{Conversion for the phone.} The selected model is converted to TensorFlow Lite for on-device inference, so no audio is transmitted off the user’s phone. The first conversion compressed the model (quantization) to about 0.25 MB, but that file could not be loaded on iOS, because the TensorFlow Lite runtime bundled with the iOS build does not support the operations that the compression produces. The model was therefore converted again without compression. The final file is about 1 MB, loads on both Android and iOS, and reproduced the outputs of the trained model to within about $10^{-7}$ in a check on test inputs.
+
+\subsection{On-Device Feature Extraction and Pipeline Alignment}
+\label{sec:ai-align}
+
+The Flutter/Dart on-device pipeline must reproduce the training-time MFCC, mel-filterbank, and onset-strength computations exactly. The Librosa-computed mel filterbank (128 bands $\times$ 1,025 FFT bins) is exported as a static asset and bundled with the app rather than reimplemented in Dart, and the decibel conversion and onset-strength logic are built to replicate Librosa’s computation. This prevents a mismatch between training and inference. To verify this alignment, the Dart feature extractor was compared against the Librosa reference on the same 10-second audio segment, with both sides using identical decoded samples so that only the feature computation was compared. Across all 42 feature rows, the maximum absolute difference was $3.0\times 10^{-7}$ for the MFCC rows, $2.5\times 10^{-8}$ for RMS energy, and $9.9\times 10^{-9}$ for onset strength, against MFCC values ranging from about $-115$ to 126. The Pearson correlation between the two implementations was 1.0000 for every row. These results confirm that the on-device pipeline reproduces the training-time features.
+
+\subsection{Runtime Classification and Driver Tagging}
+\label{sec:ai-runtime}
+
+Audio input is collected from the driver’s device via the microphone, only while the driver is marked available. Ten-second snippets are sampled and processed entirely on the device, and no raw audio is stored or transmitted. A new classification is made every 20 seconds, so the microphone is active for about half of the time. Each classification follows these steps:
+
+\begin{enumerate}
+    \item Record 10 seconds of audio in mono at 22,050 Hz.
+    \item Compute the $42 \times 431$ features on the phone (Section~\ref{sec:ai-align}).
+    \item Run the model to obtain the probabilities of Chill, Lively, and Quiet.
+    \item Add the result to the five most recent classifications.
+    \item Select the mood with the highest average probability as the moodTag.
+\end{enumerate}
+
+The moodTag is assigned by averaging the model’s class probabilities over the five most recent classifications and selecting the class with the highest average, so a single low-confidence misclassification cannot change the tag; until five classifications have accumulated, the average is taken over those available. The moodTag is stored in the driver’s availability record in Firestore (Section~\ref{sec:tools}) as one of three values: Lively, Chill, or Quiet (stored as loud, chill, and quiet). Two further states follow from the availability record rather than being stored as values. A driver who is not available has no record (UNAVAILABLE), because going offline deletes it. A driver who is available but has not yet received a classification has a record with no moodTag (UNCLASSIFIED). The record is recreated each time a driver goes available, so a tag from an earlier trip is never carried over. The matching logic treats a missing or unreadable tag as unknown and does not block a match on it (Section~\ref{sec:moodmatch}). Mood detection is not run for motorcycle drivers, since a motorcycle has no cabin for the microphone to sample; no audio is captured and no moodTag is written, so they remain in the UNCLASSIFIED state.
+
+Take for example a driver who has been in a quiet car and then starts playing calm jazz. The first readings after the change still lean Quiet, because the earlier readings remain in the average, and the tag changes to Chill once about three of the five most recent readings favor Chill. The first tag appears about 10 to 12 seconds after the driver becomes available, and on the emulator a switch from Quiet to Chill took about 60 seconds to show (Section~\ref{sec:ai-ondevice}).
+
+\textbf{Why 10 seconds.} The proponents chose 10 seconds as a trial value. The training clips were cut to the same length, because each 30-second source clip divides into three equal segments (Section~\ref{sec:ai-dataset}), and the model reads a fixed 431 frames, which is 10 seconds of audio. The value was tested afterward. A window of 10 seconds gives the first tag after about 10 to 12 seconds and holds about 10 to 30 beats at 60 to 180 beats per minute, whereas a longer window would delay every reading. The alternatives of 2.5, 3.3, and 5 seconds, with the readings averaged back to 10 seconds, are compared in Section~\ref{sec:ai-compare}. Their accuracy was within about 1.4 points of the 10-second window, which is within the variation between runs, so accuracy alone does not favor 10 seconds. Averaging the three readings of a 30-second clip added only about 0.4 points. Studies of segment length also report no single best length (Section~\ref{sec:lit-ondevice})~\cite{sun2023segmented,guimaraes2025segment}. The 10-second window is therefore a design choice within the range studied and not a proven optimum. The effect of shorter windows on battery use could not be measured, because the proponents did not have enough physical devices for a battery test (Section~\ref{sec:recs}).
+
+\textbf{Why every 20 seconds.} A reading every 20 seconds keeps the microphone and the model off for 10 seconds between captures, which limits battery use and processor load on the driver’s phone, and it still updates the tag about three times a minute. Battery use and processor load were not measured, so this is a design reason and not a tested result. In the simulation in Section~\ref{sec:ai-compare}, an interval of 10 seconds gave about the same accuracy but kept the microphone on all the time, and intervals of 30 and 60 seconds slowed the update to about 73 and 135 seconds.
+
+\textbf{Why the average of five readings.} Averaging stops one unusual reading, such as a short burst of speech or a horn, from changing the tag. The cost is a delay of about one minute before a change of sound shows (Section~\ref{sec:ai-ondevice}). The alternatives were using each reading alone, which lets the tag flip with every unusual reading, and a longer average, which is slower. In the simulation, using each reading alone gave about 89\% accuracy and 33 tag changes an hour, an average of three gave 96\% with a delay of 34 seconds and 7 changes an hour, and an average of seven gave 99.5\% with a delay of 72 seconds (Section~\ref{sec:ai-compare}).
+
+\subsection{Passenger-Driver Matching}
+\label{sec:moodmatch}
+
+When requesting a ride, passengers select the moods they will accept (Lively, Chill, or Quiet) or choose No Preference, and this selection is stored with the ride request in Firestore. Mood is applied as a fail-open filter at the point of ride acceptance. When a driver accepts a request, the matchRide Cloud Function checks the request against the driver’s current mood tag, using data it reads itself. The request is refused on mood grounds only when the passenger has chosen a specific subset of moods and the driver’s tag is known and outside that subset. A passenger with No Preference or all three moods selected, and any driver whose tag is missing or unreadable, always passes. A misclassification can therefore delay a match for a passenger with a specific preference, but an unknown classification never blocks one.
+
+\textbf{Why a fail-open filter.} The AI is an optional layer on the ridesharing function, so it must not be able to stop a ride. The alternatives were to exclude every driver whose tag does not match, including drivers whose tag is unknown, and to rank compatible drivers higher instead of excluding the others. Excluding unknown tags would block rides whenever the classifier is unsure or the microphone is unavailable, and it would thin the pool of drivers (Table~\ref{tab:ai-chance}). Ranking would limit the cost of a wrong tag, but it would also show passengers drivers whose mood they did not choose, so it is recommended for future work (Section~\ref{sec:recs}).
+
+The function first evaluates the following hard filters, numbered as in the use-case catalogue, all of which must hold: the request is still pending (HF-7); the driver is an approved driver whose account has not been suspended (HF-1) and who is set to Available on a route direction matching the request (HF-2); the driver’s stored location is on the correct side of the campus geofence for that direction (off campus for inbound, on campus for outbound); at least one passenger seat remains (HF-4); and the driver is within 400 m of the pickup point by straight-line distance (HF-5). A passenger’s vehicle-type preference is then applied with the same fail-open rule as mood. When a passenger prefers a motorcycle, the mood selector is replaced by a short note and the mood preference is stored as Any, because motorcycles do not run mood detection. The driver can accept only the oldest pending request at that pickup point and direction (first-in, first-out, described below). For outbound trips, the driver must also have chosen a final destination. Route alignment (HF-3) is applied on the driver’s screen as a display filter, because the server stores the driver’s location but not the route, so a request is shown only when its pickup lies within 100 m of the remaining route.
+
+Requests are served first-in, first-out. A passenger’s place in the queue is fixed by the time the passenger first joined and never resets when the passenger edits their preferences. This prevents users from gaming the queue and keeps the concurrency logic simple.
+
+Because free multi-selection of moods weakens match quality, passengers cannot widen their own mood selection. Instead, if no match is found after roughly two minutes, the system prompts the passenger to accept additional moods, and the search continues with the wider set. This balances user satisfaction and system efficiency.
+
+\subsection{Conditions of Mood Detection and Matching}
+\label{sec:ai-conditions}
+
+The mood AI follows fixed conditions, which are drawn from the app and the matchRide Cloud Function and are listed in Tables~\ref{tab:ai-detect} and~\ref{tab:ai-accept}. Table~\ref{tab:ai-detect} gives the conditions of the detection on the driver’s phone.
+
+{
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{.24\textwidth}|>{\raggedright\arraybackslash}p{.66\textwidth}|}
+\caption{Conditions of mood detection}\label{tab:ai-detect}\\
+\hline
+\textbf{Condition} & \textbf{Rule} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Condition} & \textbf{Rule} \\
+\hline
+\endhead
+\endfoot
+When detection runs & Only while the driver is marked available. It stops when the driver goes offline or a trip ends. \\
+\hline
+Which vehicles & Motorcycles never run detection, because they have no cabin to record. \\
+\hline
+Capture & A 10-second mono sample at 22,050 Hz, taken at the start and then every 20 seconds. \\
+\hline
+Tag & The mood with the highest average probability over the last five readings. The first tag appears after the first reading (about 10 to 12 seconds), and a change of sound shows after about 50 to 70 seconds. \\
+\hline
+A reading that fails & The reading is skipped and the next one tries again. A model that cannot be loaded stops detection and reports an error. \\
+\hline
+What is stored & Only the mood tag and the time it was updated, in the driver’s availability record. The audio is not stored. \\
+\hline
+Driver states & A driver with no availability record is UNAVAILABLE. A driver with a record but no tag is UNCLASSIFIED. \\
+\hline
+\end{longtable}
+}
+
+Table~\ref{tab:ai-accept} gives the checks that matchRide makes, in the order it makes them, when a driver accepts a request. The first check that is not met rejects the acceptance. The mood check is one of them.
+
+{
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{.16\textwidth}|>{\raggedright\arraybackslash}p{.50\textwidth}|>{\raggedright\arraybackslash}p{.24\textwidth}|}
+\caption{Conditions checked when a driver accepts a request}\label{tab:ai-accept}\\
+\hline
+\textbf{Check} & \textbf{Condition to pass} & \textbf{Result if not met} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Check} & \textbf{Condition to pass} & \textbf{Result if not met} \\
+\hline
+\endhead
+\endfoot
+Request state & The request is still pending, is not the driver’s own, and was made in the current request format. & Rejected \\
+\hline
+Request data & The request has a valid direction (inbound or outbound) and a valid pickup coordinate. & Rejected \\
+\hline
+Driver state & The driver is available, on the same direction as the request, and has a known location. & Rejected \\
+\hline
+Campus fence & An inbound driver is off campus, and an outbound driver is on campus. & Rejected \\
+\hline
+Seats & At least one passenger seat remains. & Rejected \\
+\hline
+Distance & The driver is within 400 m of the pickup point in a straight line. & Rejected \\
+\hline
+Mood & The passenger’s accepted moods are empty or include all three (Any), or the driver’s tag is unknown, or the tag is on the passenger’s list. & Rejected only when the tag is known and not on a partial list \\
+\hline
+Vehicle & The passenger has no preference, or the driver’s vehicle kind is unknown, or it is the kind the passenger asked for. & Rejected only when the kind is known and different \\
+\hline
+Queue & The request is the oldest pending request at its queue point (first in, first out). & Rejected \\
+\hline
+Destination & For an outbound trip, the driver has chosen a final destination. & Rejected \\
+\hline
+\end{longtable}
+}
+
+The mood check fails open: an unknown tag or a passenger with no preference never blocks a ride, as explained in Section~\ref{sec:moodmatch}.
+
+\subsection{Evaluation of the Mood Classifier}
+\label{sec:ai-eval}
+
+The mood classifier was evaluated on four fronts: clips it had not seen, real-world songs, the on-device features, and the behavior of the app. The system-level mood detection tests are part of the testing plan in Section~\ref{sec:phases}.
+
+\textbf{Held-out clips.} The test set holds 819 segments from 273 clips that were never used for training or for choosing the model (270 Chill, 270 Lively, and 279 Quiet). The predicted mood of each segment was compared with the mood of its clip, and accuracy, precision, recall, and F1-score were computed for each mood. Accuracy was also measured for each clip by averaging the probabilities of its three segments, which resembles the averaging that the app does.
+
+\textbf{Evaluation measures.} Accuracy is the share of segments classified correctly. For each mood, precision is the share of the segments called that mood that really are that mood, recall is the share of that mood’s segments that were found, and the F1-score is the harmonic mean of the two. The macro F1-score averages the F1-scores of the three moods, so each mood counts equally. The confusion matrix counts how often each true mood was classified as each mood. In the audit of the clips, Spearman’s $\rho$ measures how well a feature follows the order Quiet, Chill, Lively, Cliff’s $\delta$ measures how much more often the values of one mood exceed those of another than the reverse (from $-1$ to 1), and the area under the ROC curve (AUC) is the chance that a random Lively clip has a higher value than a random Chill clip, where 0.5 means no separation.
+
+\textbf{Real-world songs.} Nine songs and sounds that were not part of any training source were downloaded from YouTube and stored on Google Drive, three for each mood. The Lively clips were three recent popular songs. The Chill clips were a jazz vocal, a podcast clip, and a song. The Quiet sounds were traffic noise, air-conditioner noise, and a motor revving. The expected mood of each was decided by the proponents before testing, and the list is shown in Appendix~\ref{app:clips}. The 10 seconds at the middle of each song were classified. The same nine songs were run on the earlier version of the model (version 3) for comparison. The nine-song check was run after model selection and was not used to select the model.
+
+\textbf{Feature check.} The on-device features were compared with the training features as described in Section~\ref{sec:ai-align}.
+
+\textbf{App tests.} The nine songs were played near the microphone of an Android emulator, and the tag shown by the app was recorded after about one minute, with detection started fresh for each song. The first classification of each song was recorded as well. The number of correct detections was also recorded on three physical devices as part of system testing (Table~\ref{tab:measure}).
+
+\textbf{Measured profile of the moods.} The feature audit used the same 1,821 clips as training, before segmentation and augmentation, and did not involve the model. For each clip, Librosa was used to measure the loudness (RMS in dB), the variation of loudness, the number of onsets per second, the mean onset strength, the spectral centroid (brightness), the spectral flatness, and the tempo. The median and the middle 50\% of each feature were summarized for each mood. Whether the moods are ordered Quiet, Chill, Lively was tested with Spearman’s rank correlation and the Kruskal-Wallis test, and each pair of moods was compared with pairwise tests with Holm correction, Cliff’s delta as the effect size, and the area under the ROC curve (AUC) for Chill versus Lively. Rank-based tests were used because the features are not normally distributed. A principal component analysis of the standardized loudness, onset rate, onset strength, brightness, and flatness checked whether one energy dimension orders the moods, and the clips were also grouped by source genre or tag.
+
+\textbf{Comparison with alternatives.} Simple models: single-feature threshold rules (with thresholds fitted on the training segments), a decision tree of depth 3, logistic regression, and a random forest were trained on seven hand-made features per segment (loudness, loudness variation, onsets per second, onset strength, spectral centroid, spectral flatness, and tempo), with and without the mean and standard deviation of each MFCC, and were scored on the same test segments as the CNN. Feature test: the CNN of Section~\ref{sec:ai-model} was trained with each of the three features alone and in pairs, for three random seeds each, without augmentation and with each feature row standardized, and the mean and standard deviation of the test accuracy were reported. Window length: the 10-second feature matrix was cut into pieces of 5, 3.3, and 2.5 seconds, a CNN was trained on the pieces, and the predictions of the pieces were averaged back to 10 seconds and over the three segments of each 30-second clip. Interval and window: readings were drawn at random from the final model’s probabilities on the test segments of each mood, and the tag was simulated for update intervals of 10 to 60 seconds and averaging windows of 1 to 10 readings, with 1,000 simulated runs per setting. The steady accuracy, the tag changes per hour, the mean time to show a new mood after a change of sound, and the share of time the microphone is on were recorded.
+
+\subsection{Design Choices and Alternatives}
+\label{sec:ai-choices}
+
+The proponents identified the alternatives in Table~\ref{tab:ai-choices} for each aspect of the AI after the design was built, and compared them using the evidence in the last column. Where the evidence is a test of the alternatives, the result is in Section~\ref{sec:ai-compare}. Evidence marked as a design reason was not tested.
+
+{
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{.14\textwidth}|>{\raggedright\arraybackslash}p{.12\textwidth}|>{\raggedright\arraybackslash}p{.18\textwidth}|>{\raggedright\arraybackslash}p{.25\textwidth}|>{\raggedright\arraybackslash}p{.17\textwidth}|}
+\caption{Design choices and the alternatives compared}\label{tab:ai-choices}\\
+\hline
+\textbf{Aspect} & \textbf{Choice} & \textbf{Alternatives} & \textbf{Why the choice} & \textbf{Evidence} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Aspect} & \textbf{Choice} & \textbf{Alternatives} & \textbf{Why the choice} & \textbf{Evidence} \\
+\hline
+\endhead
+\endfoot
+Matching attribute & In-car audio & Driver-chosen tag, driving style, ratings, music-app data, questionnaire & Automatic, private on the device, and describes the ride atmosphere directly & Design reason \\
+\hline
+Where it runs & On the phone & Cloud server & No recording leaves the phone and no connection is needed~\cite{zhao2022survey} & Literature \\
+\hline
+Number of moods & Three & Two, four or five, genres, emotions, continuous score & Larger matching pools, fewer disagreements, and a match with passenger choices & Table~\ref{tab:ai-chance},~\cite{hu2008mirex,hu2007simplified,gomez2019emotions,roth2008market} \\
+\hline
+Training sources & GTZAN, Jamendo, ESC-50, generated noise & GTZAN only, recordings made inside vehicles & A model trained mostly on GTZAN missed all three Lively songs, and vehicle recordings were not feasible & Measured (6 of 9 songs, then 7 of 9) \\
+\hline
+Data split & By source clip & By segment & A split by segment lets parts of one clip fall in both sets and overstates accuracy & Problem found and corrected \\
+\hline
+Augmentation & Training set only & None, or before the split & Helps CNNs on small audio sets~\cite{ba2025music,salamon2017deep,lin2023cnn}, and keeps copies of test clips out of training & Literature, not tested separately \\
+\hline
+Input window & 10 s every 20 s & 2.5 s, 3.3 s, 5 s & Holds 10 to 30 beats and keeps delay and microphone use low & Tested: accuracy within 1.4 points for 2.5 to 10 s (Section~\ref{sec:ai-compare}) \\
+\hline
+Features & MFCC, RMS, onset strength & Spectrogram only, tempo, more descriptors & Color, loudness, and rhythm relate to energy~\cite{panda2023audio} & Tested: MFCC carries most; onset strength adds none (Section~\ref{sec:ai-compare}) \\
+\hline
+Model & Small CNN & Threshold rules, decision tree, logistic regression, random forest & Learns patterns across time and frequency, and is about 1 MB & Tested: rules far worse; MFCC-summary models within 1 to 4 points (Section~\ref{sec:ai-compare}) \\
+\hline
+Choosing a run & Five seeds plus a four-song check & One run & Validation accuracy ranged from 82.54\% to 85.47\% across the five runs & Measured \\
+\hline
+Model file & Float32 & Compressed (quantized) & The compressed file failed to load on iOS & Measured \\
+\hline
+Tag from readings & Average of the last 5, every 20 s & Each reading alone, other windows & Stops one odd reading from changing the tag, at a cost of about one minute & Measured delay of about 52 s in a simulation (Section~\ref{sec:ai-compare}) \\
+\hline
+Use in matching & Fail-open filter & Always exclude on a mismatch, rank drivers & Cannot block a ride when the tag is unknown or the passenger has no preference & Design reason \\
+\hline
+\end{longtable}
+}
+
+
+\vspace{1em}
+\section{Routing System}
+\label{sec:routing}
+\begin{figure}[htbp] % 'h' means "here" (suggested placement)
+    \centering
+    \includegraphics[width=0.54\textwidth]{images/Proximity zone inbound.png} % Adjust width as needed
+    \caption{Estimated Proximity Zone for Inbound USC-TC Ride}
+    \label{fig: Proximity zone inbound}
+\end{figure}
+
+\begin{figure}[htbp] % 'h' means "here" (suggested placement)
+    \centering
+    \includegraphics[width=0.54\textwidth]{images/Proximity zone outbound.png} % Adjust width as needed
+    \caption{Estimated Proximity Zone for Outbound USC-TC Ride}
+    \label{fig: Proximity zone outbound}
+\end{figure}
+
+The routing system begins by determining whether the user's current trip is inbound to or outbound from USC Talamban Campus. This classification is now established through a geofenced proximity zone that encompasses the entire campus perimeter. The Bunzel lobby is the designated terminal point for all pickups and drop-offs within campus grounds.
+
+When a user opens the passenger or driver menu, their real-time GPS location is sent to a Firebase Cloud Function (\texttt{classifyTripDirection}), which runs a point-in-polygon test against the predefined geofenced polygon representing the USC Talamban Campus. The same polygon and test are kept in the app, where they give an instant hint and an offline fallback; a verification script checks that the server and client copies agree on the same set of test points. The server's answer is the authoritative one: when a passenger submits a request, the \texttt{createRideRequest} function classifies the pickup coordinate again, and the request is written with that direction, so a client cannot choose its own. If the user's location is inside the geofence, the trip is automatically classified as outbound, initiating drop-off selection and route generation away from campus, a scenario depicted in Figure~\ref{fig: Proximity zone outbound}. If the user is outside the geofence, the trip is classified as inbound, and the system prepares an optimized route toward USC Talamban Campus with pickup point detection along the way, a scenario depicted in Figure~\ref{fig: Proximity zone inbound}.
+
+\begin{figure}[htbp] % 'h' means "here" (suggested placement)
+    \centering
+    \includegraphics[width=0.92\textwidth]{images/Routing Figure.png} % Adjust width as needed
+    \caption{Routing Example}
+    \label{fig:routing}
+\end{figure}
+
+A core feature of the routing system is its ability to detect deviations from the suggested route and automatically generate a new optimized path in real time. A routing example is shown in Figure~\ref{fig:routing}. This applies to both inbound and outbound trips. For inbound travel to USC Talamban Campus, the application initially calculates an optimized route from the student driver’s current location to the campus, incorporating predefined pickup points situated along major roads and bus stops. As the driver begins the journey, the system constantly monitors their GPS position. If the driver takes a turn or route that deviates from the suggested path, the Google Routes API (through the \texttt{computeRouteAsia} Cloud Function) is called to recalculate a new route to the original destination—USC Talamban Campus—while still attempting to pass through as many nearby pickup points as possible. The route is recalculated when the driver is 75~m or more away from it, or has moved 50~m since the last calculation, at most once every 15 seconds. This dynamic rerouting, demonstrated in Figures~\ref{fig: generated route} and~\ref{fig: recalculated route} ensures minimal disruption to the ride-matching process, while allowing the driver to navigate based on real-time road conditions or personal preferences.
+
+\begin{figure}[htbp] % 'h' means "here" (suggested placement)
+    \centering
+    \includegraphics[width=0.48\textwidth]{images/outbound route.png} % Adjust width as needed
+    \caption{Sample Optimized Route (Outbound TC)}
+    \label{fig: generated route}
+\end{figure}
+
+\begin{figure}[htbp] % 'h' means "here" (suggested placement)
+    \centering
+    \includegraphics[width=0.48\textwidth]{images/recalculated outbound.png} % Adjust width as needed
+    \caption{Sample Recalculated Route after Driver Deviates (Outbound TC)}
+    \label{fig: recalculated route}
+\end{figure}
+
+
+\section{Ride-matching Algorithm}
+\label{sec:matching}
+\begin{figure}[htbp] % 'h' means "here" (suggested placement)
+    \centering
+    \includegraphics[width=0.54\textwidth]{images/Entities.png} % Adjust width as needed
+    \caption{Ride-matching Entities}
+    \label{fig: entities}
+\end{figure}
+As shown in Figure~\ref{fig: entities} the ride-matching algorithm operates based on the interaction of the following entities:
+\begin{itemize}
+    \item Pickup/Drop-Off Point: All passenger interactions are anchored to fixed pickup/drop-off points.
+    \item Destination Point: The target location of the trip (e.g., USC Talamban Campus or end point of the driver). 
+    \item Driver: Students who offer rides. Each driver follows an optimized route.
+    \item Passenger: Students requesting transport
+\end{itemize}
+
+These entities collectively influence the algorithm’s decision-making—who gets matched, when, and where—based on location data, proximity zones, and real-time route optimization.
+
+\vspace{1em}
+\subsection{Inbound Ride-Matching System Logic}
+\indent For inbound trips heading toward USC Talamban Campus, the system applies a structured ride-matching flow that prioritizes driver control, optimized routing, and context-aware notifications. 
+Once a student driver marks themselves available, the application immediately generates an optimized route using the Google Routes API through a Cloud Function. Along this route, the system displays predefined pickup points—locations where passengers have submitted requests and are actively waiting. A sample route be seen in Figure~\ref{fig: sample inbound ride matching}.
+
+\begin{figure}[htbp] % 'h' means "here" (suggested placement)
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/RIDE MATCHING FIGURES.png} % Adjust width as needed
+    \caption{Sample Inbound Ride-Matching System Logic}
+    \label{fig: sample inbound ride matching}
+\end{figure}
+
+To give drivers autonomy and clarity, all pickup points with active passenger requests are visually displayed along the route. Only the pickup points selected by the driver will be considered eligible for matching.
+
+\begin{figure}[htbp] % 'h' means "here" (suggested placement)
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/Conditions.png} % Adjust width as needed
+    \caption{Matching Conditions Logic}
+    \label{fig: matching conditions}
+\end{figure}
+
+To determine whether a driver can see and accept passenger requests at a given pickup point along the optimized route to USC Talamban Campus, the app applies the conditions shown in Figure~\ref{fig: matching conditions}. On the driver’s screen, a request is shown only if its pickup point lies within 100 meters of the remaining route, and requests at the same pickup point are listed in queue order, oldest first. To accept a request, the driver must be within 400 meters of the pickup point (straight-line distance), at least one passenger seat must remain, and the request must be the oldest pending request at that pickup point and direction. When the driver accepts, the matchRide Cloud Function checks these conditions again on the server, together with the driver’s verification status, route direction, and campus-side location, and then applies the passenger’s mood and vehicle preferences as fail-open filters (Section~\ref{sec:moodmatch}). This conditional visibility ensures that drivers see only requests that are on their way and that requests are handled in the order they were made. It also prevents matches from being made when the vehicle is already full, maintaining efficiency and fairness in the system.
+
+Two further limits keep the interaction safe and relevant. A passenger can only request a pickup point that is within 100~m of their position. A driver is shown a request only when its pickup point is within 100~m of the remaining route, and can accept it only when the driver is within 400~m of the pickup point and the passengers on board are below the vehicle's capacity. When a driver's position changes so that a waiting request becomes eligible under these checks, a Cloud Function uses the same server-side eligibility check as acceptance and sends a push notification, so the driver does not have to keep the screen open. A narrower 300 to 400~m prompt window with a minimum estimated time of arrival of three minutes was part of the original design to limit distraction, but it is not applied in the current build. When the match is accepted, the server also copies each side's display name and rating, and the driver's vehicle type and plate number, onto the request so that the two riders can recognize each other.
+
+This logic is consistent with optimization practices found in ride-hailing literature, where user fairness and system-level route efficiency are jointly considered to balance service quality and operational practicality \cite{cao2021optimization}. Additionally, minimizing cognitive load on drivers through controlled notifications aligns with research showing that poorly timed prompts can contribute to distracted driving and reduce overall safety—particularly among younger, less experienced drivers such as university students \cite{xing2024understanding,oviedo2018young}. By showing a driver only requests that are on the route, close enough to accept, and within capacity, and by notifying only when a request becomes eligible, the system limits unnecessary prompts while maintaining real-time responsiveness in a multi-user environment.
+
+\vspace{1em}
+
+\begin{figure}[htbp] % 'h' means "here" (suggested placement)
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/OUTBOUND.png} % Adjust width as needed
+    \caption{Sample Outbound Ride-Matching System Logic}
+    \label{fig: sample outbound ride matching}
+\end{figure}
+
+\subsection{Outbound Ride-Matching System Logic} 
+\indent For outbound rides, the journey begins at the Bunzel Lobby dispatch point inside the USC Talamban Campus. In this scenario, the driver first selects their intended end destination—typically near their home or an area they plan to pass through after school—either by typing it in a search field or by dropping a pin on the map. An example scenario is shown in Figure~\ref{fig: sample outbound ride matching}.
+
+Once the driver has chosen a destination, the algorithm generates an optimized route using the Google Routes API, mapping the path from Talamban Campus to the selected endpoint. Along this route, the system automatically scans for predefined drop-off points that fall within or closely align with the optimized path.
+
+The application then presents the list of eligible drop-off points to the driver, each showing how many passengers have active requests to be dropped off at that specific location. This gives the driver the ability to assess demand along their chosen path.
+
+The driver then accepts passenger requests for specific drop-off points that they are willing to accommodate. Once confirmed, the system updates the ride plan, grouping passengers by shared drop-off locations, while continuously monitoring route progress and rerouting if necessary due to detours or road conditions.
+
+A passenger's client cannot tell which drivers are available or where they are heading, so when a request at a drop-off point is not accepted, the alternative drop-off points offered to the passenger are ranked on the server by the \texttt{suggestAlternativeDropOffs} function. It reads the destinations of the currently available outbound drivers and ranks the other approved points by how close they are to those destinations, so that the passenger sees, for example, ``2 drivers heading this way''. The function only reads data; it never decides whether a request can be accepted, which remains the job of \texttt{matchRide}. A passenger who needs to leave before the final drop-off can request an early drop-off, and the driver is notified.
+
+The outbound ride-matching system at USC Talamban Campus leverages advanced commute management strategies, similar to those employed by platforms like CommuteHub from RideAmigos [1]. This system ensures efficient ride sharing by matching passengers with drivers whose routes include their drop-off points, aligning with best practices in transportation demand management (TDM) that emphasize streamlined trip planning and coordination to reduce congestion and enhance user experience \cite{rideamigosHomepage,wsutdm}. By integrating personalized mobility options and optimizing drop-offs, the system provides drivers with control over their routes while minimizing detours \cite{rideamigosHomepage}.
+
+% \uishot[width]{file-name-without-extension}{caption under the screen}
+\providecommand{\uishot}[3][0.23\textwidth]{%
+  \begin{minipage}[t]{#1}\centering
+    \IfFileExists{images/ui/#2.png}%
+      {\includegraphics[width=\linewidth]{images/ui/#2.png}}%
+      {\fbox{\parbox[c][6.2cm][c]{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\centering\footnotesize Screenshot pending:\\[2pt]\texttt{#2}}}}\\[3pt]
+    {\footnotesize #3}
+  \end{minipage}}
+
+% \flowimg{width as a fraction of the text width}{flowchart file name without extension}
+\providecommand{\flowimg}[2]{%
+  \IfFileExists{images/#2.png}%
+    {\includegraphics[width=#1\textwidth,height=0.80\textheight,keepaspectratio]{images/#2.png}}%
+    {\fbox{\parbox[c][7cm][c]{0.8\textwidth}{\centering Flowchart pending:\\[2pt]\texttt{#2}}}}}
+
+% \flowsplit{caption}{label}{chart name}: a tall flowchart cut into 2 or 3 pieces (images/<name>_a.png, _b, _c),
+% each piece set at full text width so the text stays readable; later pieces repeat the lane header.
+\providecommand{\flowpiece}[2]{\begin{figure}[htbp]\centering\includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{images/#1.png}#2\end{figure}}
+\providecommand{\flowsplit}[3]{%
+  \flowpiece{#3_a}{\caption{#1}\label{#2}}%
+  \begingroup\def\x{\ContinuedFloat}%
+  \begin{figure}[htbp]\ContinuedFloat\centering\includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{images/#3_b.png}\caption[]{#1 (continued)}\end{figure}%
+  \IfFileExists{images/#3_c.png}{\begin{figure}[htbp]\ContinuedFloat\centering\includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{images/#3_c.png}\caption[]{#1 (continued)}\end{figure}}{}%
+  \endgroup}
+
+\section{System Flow}
+\label{sec:flow}
+This section follows a user through the application. Each flow is shown twice: as a flowchart that gives the logic, and as screenshots of the actual application that show what the user sees at each step. The flowcharts use one colour per role (blue for steps shared by every user, green for drivers, yellow for passengers, and red for administrators). Circles name the screen a flow starts from or continues to.
+
+\subsection{User Registration and Login}
+A new user first sees a short welcome carousel, shown once per device (Figure~\ref{fig:ui-register}a). Registration then takes place in the steps of Figure~\ref{fig: registration}. The user chooses Passenger or Driver and enters a name, a USC email address ending in \texttt{@usc.edu.ph}, and a password (Figure~\ref{fig:ui-register}b). Drivers also declare their vehicle class, vehicle type, fuel type, and number of seats. The required documents are then uploaded (Figure~\ref{fig:ui-register}c): the USC School ID, Study Load, and Parent's Permit for every user, plus the driver's license, OR/CR, and campus Motor Vehicle Pass for drivers, and proof of a second helmet for motorcycle drivers (Section~\ref{sec:safety}). Before submitting, the user accepts the terms and the liability waiver. A verification link is sent to the email address, and an administrator reviews the documents before the account can be used. Until then, and if the registration is denied or the account is suspended, the user sees a status screen with the reason (Figure~\ref{fig:ui-register}d) instead of the application.
+
+    \flowsplit{User Registration}{fig: registration}{Registration}
+
+    \begin{figure}[htbp]
+        \centering
+        \uishot{reg-welcome}{(a) Welcome}\hfill
+        \uishot{reg-account}{(b) Create account}\hfill
+        \uishot{reg-documents}{(c) Documents}\hfill
+        \uishot{reg-pending}{(d) Awaiting approval}
+        \caption{Screens of the registration flow}
+        \label{fig:ui-register}
+    \end{figure}
+
+Login is shown in Figure~\ref{fig: login}. The user signs in with the USC email and password (Figure~\ref{fig:ui-login}a). If the email has not been verified, the application sends the verification link again and signs the user out. If the account is not approved, the status screen is shown. Approved administrators go to the Admin Menu. Everyone else arrives at the Home screen (Figure~\ref{fig:ui-login}b), which has four tabs (Home, Rides, Chats, and Profile). A first-time user is offered a short tour that can be skipped. A driver account has a mode switch on Home that chooses between Driver and Passenger (Figure~\ref{fig:ui-login}c); a passenger account always uses Passenger mode.
+
+    \flowsplit{User Login}{fig: login}{Login}
+
+    \begin{figure}[htbp]
+        \centering
+        \uishot[0.3\textwidth]{login}{(a) Login}\hfill
+        \uishot[0.3\textwidth]{home-passenger}{(b) Home (passenger mode)}\hfill
+        \uishot[0.3\textwidth]{home-driver}{(c) Home (driver mode)}
+        \caption{Screens of the login flow}
+        \label{fig:ui-login}
+    \end{figure}
+
+\subsection{Driver's Perspective}
+\label{sec:flow-driver}
+Figure~\ref{fig:driver menu} shows the user flow for the Driver Menu. The driver sets the rideshare details, which are the number of seats on offer, up to the capacity of the registered vehicle (Figure~\ref{fig:ui-driver-menu}a). Each driver's vehicle category and fuel type are declared in their profile, since the Ride Token calculation depends on them (Section~\ref{sec:tokens}). The driver then taps \emph{Confirm and check my location}. The application reads the driver's GPS position and asks the server to classify it against the campus geofence (Section~\ref{sec:routing}); if the server cannot be reached, the app uses its own copy of the geofence. A driver inside USC-TC is offered an outbound trip, and a driver outside it an inbound trip (Figure~\ref{fig:ui-driver-menu}b and c).
+
+    \flowsplit{Driver Menu}{fig:driver menu}{Driver Menu}
+
+    \begin{figure}[htbp]
+        \centering
+        \uishot[0.3\textwidth]{driver-details}{(a) Rideshare details}\hfill
+        \uishot[0.3\textwidth]{driver-direction-outbound}{(b) Inside USC-TC: outbound}\hfill
+        \uishot[0.3\textwidth]{driver-direction-inbound}{(c) Outside USC-TC: inbound}
+        \caption{Screens of the Driver Menu}
+        \label{fig:ui-driver-menu}
+    \end{figure}
+
+\paragraph{Inbound USC-TC} Figures~\ref{fig: Driver Inbound} and~\ref{fig: Driver Inbound 2} show the process a student driver follows when offering rides to USC-TC. The application draws a route from the driver's location to the Bunzel Lobby (Figure~\ref{fig:ui-driver-inbound}a). When the driver switches \emph{Available} on, the application saves the driver's availability, begins sharing the driver's location, and, for cars, starts mood detection (Section~\ref{sec:ai}). Requests whose pickup point lies within 100~m of the route are listed, oldest first at each pickup point, and drawn on the map (Figure~\ref{fig:ui-driver-inbound}b). The driver accepts a request by tapping \emph{Accept}, or turns on \emph{Auto-accept}, in which case the application accepts the oldest eligible request itself. In both cases the server repeats the checks of Section~\ref{sec:matching} before the request is accepted. After an acceptance, the seat count drops and the route is rebuilt through the accepted pickup points (Figure~\ref{fig:ui-driver-inbound}c). At each pickup point the driver taps \emph{Confirm pickup}; the first confirmation starts the trip and live tracking for the passengers. If the driver leaves the route by 75~m or more, the route is recalculated automatically. During the trip, a passenger may ask for an early drop-off, which the driver confirms. A driver may cancel a passenger who has not yet been picked up, which frees the seat, or end the whole trip early, in which case the passengers on board are recorded as \emph{terminated early} and no Ride Tokens are earned. When every accepted passenger has been picked up, the driver taps \emph{Complete ride} (Figure~\ref{fig:ui-driver-inbound}d).
+
+    \flowsplit{Driver Inbound to USC-TC (1 of 2): going available and accepting requests}{fig: Driver Inbound}{Driver Inbound 1}
+
+    \flowsplit{Driver Inbound to USC-TC (2 of 2): the trip}{fig: Driver Inbound 2}{Driver Inbound 2}
+
+    \begin{figure}[htbp]
+        \centering
+        \uishot{di-route}{(a) Route and Available switch}\hfill
+        \uishot{di-requests}{(b) Pending requests}\hfill
+        \uishot{di-accepted}{(c) Accepted pickups}\hfill
+        \uishot{di-complete}{(d) Complete ride}
+        \caption{Screens of the Driver Inbound flow}
+        \label{fig:ui-driver-inbound}
+    \end{figure}
+
+\paragraph{Outbound USC-TC} In Figures~\ref{fig:Driver Outbound} and~\ref{fig:Driver Outbound 2}, the driver offers rides from the campus to various destinations (for example, homes or malls). The driver types a destination in the search box or drops a pin on the map (Figure~\ref{fig:ui-driver-outbound}a). The application saves the destination, draws the route from the Bunzel Lobby, and lists the approved drop-off points along that route, each with the number of passengers waiting to be dropped there (Figure~\ref{fig:ui-driver-outbound}b). After switching \emph{Available} on, the driver accepts the requests for the drop-off points they are willing to serve (Figure~\ref{fig:ui-driver-outbound}c), or uses \emph{Auto-accept}. The server checks that the driver is within 400~m of the Bunzel Lobby and applies the other conditions of Section~\ref{sec:matching}. Accepted passengers are grouped by drop-off point. At the Bunzel Lobby the driver confirms each pickup, which starts the trip. Along the route the driver confirms each drop-off at its point (Figure~\ref{fig:ui-driver-outbound}d); when the last passenger is dropped off, the trip is complete. Early drop-offs, cancellations, and early termination work as in the inbound flow.
+
+    \flowsplit{Driver Outbound from USC-TC (1 of 2): going available and accepting requests}{fig:Driver Outbound}{Driver Outbound 1}
+
+    \flowsplit{Driver Outbound from USC-TC (2 of 2): the trip}{fig:Driver Outbound 2}{Driver Outbound 2}
+
+    \begin{figure}[htbp]
+        \centering
+        \uishot{do-destination}{(a) Destination search}\hfill
+        \uishot{do-dropoffs}{(b) Drop-off points on the route}\hfill
+        \uishot{do-requests}{(c) Pending requests}\hfill
+        \uishot{do-confirm}{(d) Confirm drop-off}
+        \caption{Screens of the Driver Outbound flow}
+        \label{fig:ui-driver-outbound}
+    \end{figure}
+
+\subsection{Passenger's Perspective}
+\label{sec:flow-passenger}
+Figure~\ref{fig: passenger menu} shows the user flow for the Passenger Menu. The application reads the passenger's GPS position and asks the server to classify it against the campus geofence, as for drivers. A passenger inside USC-TC is taken to the outbound screen and one outside it to the inbound screen. If location is off or not permitted, an error with a \emph{Retry} button is shown.
+
+    \flowsplit{Passenger Menu}{fig: passenger menu}{Passenger Menu}
+
+\paragraph{Inbound USC-TC} Figures~\ref{fig: Passenger Inbound} and~\ref{fig: Passenger Inbound 2} outline the passenger's journey to the campus. The application shows the approved pickup points near the passenger, each marked \emph{In range} or \emph{Too far} (Figure~\ref{fig:ui-pax-inbound}a). A request can only be made for a point within 100~m of the passenger. The passenger then chooses which moods to accept and a vehicle preference, where \emph{Any} matches every driver (Figure~\ref{fig:ui-pax-inbound}b), and taps \emph{Request ride}. The server creates the request, sets its direction from the pickup point, and fixes the passenger's place in the first-in, first-out queue of that pickup point. The waiting screen reads \emph{Looking for a driver} (Figure~\ref{fig:ui-pax-inbound}c). If the passenger moves more than 100~m from the pickup point while waiting, the request is cancelled automatically. After about two minutes without a match, the passenger may accept more moods or vehicle types; this edits the same request, so the queue place does not change (Section~\ref{sec:moodmatch}). When a driver accepts, the passenger is notified, can follow the driver's location on the map, and can chat with the driver (Figure~\ref{fig:ui-pax-inbound}d). If the driver cancels or ends the trip early, the passenger sees a notice and may request again. A passenger who needs to leave before the end can ask for an early drop-off, which the driver confirms.
+
+    \flowsplit{Passenger Inbound to USC-TC (1 of 2): requesting a ride}{fig: Passenger Inbound}{Passenger Inbound 1}
+
+    \flowsplit{Passenger Inbound to USC-TC (2 of 2): the trip}{fig: Passenger Inbound 2}{Passenger Inbound 2}
+
+    \begin{figure}[htbp]
+        \centering
+        \uishot{pi-points}{(a) Pickup points}\hfill
+        \uishot{pi-preferences}{(b) Mood and vehicle preference}\hfill
+        \uishot{pi-waiting}{(c) Waiting for a driver}\hfill
+        \uishot{pi-matched}{(d) Driver on the way}
+        \caption{Screens of the Passenger Inbound flow}
+        \label{fig:ui-pax-inbound}
+    \end{figure}
+
+\paragraph{Outbound USC-TC} Figures~\ref{fig: Passenger Outbound} and~\ref{fig: Passenger Outbound 2} detail how a passenger books a trip from the campus to an external destination. The passenger must be inside the campus and within 100~m of the Bunzel Lobby, which is the only pickup point. The passenger opens the drop-off picker and selects one of the approved drop-off points (Figure~\ref{fig:ui-pax-outbound}a), sets the preferences as for inbound trips, and taps \emph{Request ride}. If no driver accepts, the passenger can try a different drop-off point; the alternatives are ranked by how many available drivers are heading that way (Figure~\ref{fig:ui-pax-outbound}b, Section~\ref{sec:matching}). Once a driver accepts, the passenger is notified (Figure~\ref{fig:ui-pax-outbound}c), is picked up at the Bunzel Lobby, and is dropped off at the chosen point.
+
+    \flowsplit{Passenger Outbound from USC-TC (1 of 2): requesting a ride}{fig: Passenger Outbound}{Passenger Outbound 1}
+
+    \flowsplit{Passenger Outbound from USC-TC (2 of 2): the trip}{fig: Passenger Outbound 2}{Passenger Outbound 2}
+
+    \begin{figure}[htbp]
+        \centering
+        \uishot[0.3\textwidth]{po-picker}{(a) Drop-off picker}\hfill
+        \uishot[0.3\textwidth]{po-different}{(b) Try a different drop-off point}\hfill
+        \uishot[0.3\textwidth]{po-matched}{(c) Driver on the way}
+        \caption{Screens of the Passenger Outbound flow}
+        \label{fig:ui-pax-outbound}
+    \end{figure}
+
+\subsection{After the Ride}
+\label{sec:flow-after}
+Figures~\ref{fig:after-driver} and~\ref{fig:after-passenger} show what happens when a trip ends. For the driver, the application records the ride, and the server measures the route and calculates the Ride Tokens; the client sends only the trip identifier and never a distance or a fuel price (Section~\ref{sec:tokens}). The completion screen shows the award as pending administrator review (Figure~\ref{fig:ui-after}a). An administrator checks each claim with its per-passenger breakdown, and the result appears in the driver's Token History (Figure~\ref{fig:ui-after}b). Passengers see a completion screen with an optional rating of the driver, which can also be given later from Ride Records (Figure~\ref{fig:ui-after}c). The matched pair can keep chatting for a short time after the ride (Figure~\ref{fig:ui-after}d). Either user can report a problem, and an emergency button is available during a ride; pressing it notifies the administrators and records the user's name, role, and the time (Figure~\ref{fig:ui-after}e and f).
+
+    \flowsplit{Driver After the Ride}{fig:after-driver}{Driver After}
+
+    \flowsplit{Passenger After the Ride}{fig:after-passenger}{Passenger After}
+
+    \begin{figure}[htbp]
+        \centering
+        \uishot[0.27\textwidth]{after-driver-complete}{(a) Driver completion screen}\hfill
+        \uishot[0.27\textwidth]{after-token-history}{(b) Token History}\hfill
+        \uishot[0.27\textwidth]{after-passenger-rating}{(c) Passenger rating}\\[6pt]
+        \uishot[0.27\textwidth]{after-chat}{(d) Ride chat}\hfill
+        \uishot[0.27\textwidth]{after-report}{(e) Report a problem}\hfill
+        \uishot[0.27\textwidth]{after-emergency}{(f) Emergency button}
+        \caption{Screens after and during a ride}
+        \label{fig:ui-after}
+    \end{figure}
+
+\subsection{Admin}
+\label{sec:flow-admin}
+Figure~\ref{fig: admin menu} shows the Admin Menu. The administrator signs in with secure credentials, and the dashboard shows how many items are waiting for a decision (Figure~\ref{fig:ui-admin}a). From the dashboard, the administrator has access to the following sections:
+\begin{itemize}
+    \item Registrations: Admins view, approve, or deny registration requests, giving a reason when denying (Figure~\ref{fig:ui-admin}b). Student drivers must submit essential documents such as the driver's license, OR/CR, and proof of university enrollment, which admins verify before granting access. Admins can also suspend and reinstate accounts, reset access, or update user details based on flagged behavior or violations.
+    \item Reports: Admins receive and review reports from passengers and drivers, flag critical issues, and take appropriate action. A separate list shows the emergency alerts that users have raised (Figure~\ref{fig:ui-admin}c).
+    \item Token Claims: Admins review each Ride Token award together with the recorded distances and the per-passenger breakdown, and can recalculate it if needed (Figure~\ref{fig:ui-admin}d).
+    \item Ride Logs: The system stores all completed ride data. Admins use these logs to review ride history, monitor matching behavior, and ensure compliance with guidelines.
+    \item Ride Points: Admins maintain the approved pickup and drop-off points (Figure~\ref{fig:ui-admin}e).
+    \item Fuel Price and Semester Period: Admins check or refresh the DOE fuel price and its sync status, and set the dates of the semester that applies the 300-token cap (Figure~\ref{fig:ui-admin}f).
+\end{itemize}
+
+    \flowsplit{Admin Menu}{fig: admin menu}{admin}
+
+    \begin{figure}[htbp]
+        \centering
+        \uishot[0.27\textwidth]{admin-dashboard}{(a) Dashboard}\hfill
+        \uishot[0.27\textwidth]{admin-registrations}{(b) Registrations}\hfill
+        \uishot[0.27\textwidth]{admin-reports}{(c) Reports and alerts}\\[6pt]
+        \uishot[0.27\textwidth]{admin-token-claim}{(d) Token claim}\hfill
+        \uishot[0.27\textwidth]{admin-ride-points}{(e) Ride Points}\hfill
+        \uishot[0.27\textwidth]{admin-fuel-price}{(f) Fuel Price}
+        \caption{Screens of the Admin flow}
+        \label{fig:ui-admin}
+    \end{figure}
+
+This flow ensures that a central authority maintains order, enforces safety protocols, and provides accountability within the USC student ridesharing ecosystem.
+
+\section{Non-Monetary Incentive System}
+\label{sec:tokens}
+To encourage sustainable transportation among students, our ridesharing platform introduces a non-monetary incentive system that allows student drivers to earn %Community Extension Services (CES) 
+CES Points based on their contributions to shared transportation. This system operates separately from traditional CES activities (e.g., donation drives, tree planting) by providing a passive and recurring method for student drivers to contribute to the university’s sustainability initiatives.
+
+Since direct monetary equivalence (1 CES Point = ₱100) would make it too easy to reach the 3 CES-Point-per-semester cap, a tokenomics approach is implemented. This model adjusts the conversion rate by introducing Ride Tokens, which reflect fuel consumption and distance traveled.
+
+Each ride earns Ride Tokens based on the fuel expenditure required to complete the shared trip. The formula ensures that both short-distance and long-distance drivers are fairly rewarded, while also maintaining a balance between multi-passenger and single-passenger trips (e.g., motorcycle passengers).
+
+The system adheres to the university’s standard CES point-to-peso ratio, where 1 CES Point = PHP 100. However, due to the unique nature of ridesharing, we introduce a token-based reward system (Ride Tokens) that factors in fuel costs and ride-sharing efficiency while ensuring fairness and engagement over multiple semesters.
+
+\begin{itemize}
+    \item 100 Tokens = 100 Pesos = 1 CES Point
+    \item 3 CES Points per semester cap = 300 Ride Tokens per semester
+    \item Maximum of 18 CES Points over 3 academic years (2 semesters) = 1,800 Ride Tokens
+\end{itemize}
+
+Each driver earns tokens based on:
+\begin{itemize}
+    \item Fuel Consumption: Calculated based on vehicle fuel efficiency (km/L) and prevailing fuel prices.
+    \item Distance Traveled: The total distance covered while transporting passengers.
+    \item Ride Distribution Factor: A weighting system that accounts for multiple pickups in a single trip.
+\end{itemize}
+
+To calculate the Ride Tokens, two inputs are needed: the fuel price and the vehicle's fuel efficiency. Fuel prices are taken from the DOE's weekly Cebu City ``Common Price'' report for gasoline and diesel. When a weekly value is missing, the median of the reported retailer prices is used instead; the median was preferred over the mean because it is less affected by outlier station prices. The fuel price is not typed in by anyone: a scheduled Cloud Function checks the DOE Visayas pump-price page every day, downloads the newest weekly report, reads the Cebu City rows for gasoline (RON 91) and diesel, and stores the result in Firestore only when it is newer than what is already there. There is no built-in default price: if the page cannot be read, the last price that was read successfully is kept, the failure is recorded, and the administrators are notified so that a stale price is noticed. Administrators can also refresh the price manually. Fuel efficiency is standardized by the vehicle category the driver declares at registration (Table~\ref{tab:efficiency}), taken from published specifications. Drivers choose one of eleven categories, and an ambiguous case is resolved by checking the make and model against the OR/CR that was already collected. A conservative figure per category is used, so that drivers are not rewarded for fuel consumption they did not actually incur.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Fuel Efficiency by Declared Vehicle Category}
+    \label{tab:efficiency}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|l|c|l|c|}
+        \hline
+        \textbf{Category} & \textbf{km/L} & \textbf{Category} & \textbf{km/L} \\
+        \hline
+        Motorcycle (standard) & 50 & SUV (compact, e.g., Raize) & 22 \\
+        Motorcycle (scooter) & 55 & SUV (mid, e.g., Fortuner) & 12 \\
+        Sedan (compact, e.g., Vios) & 26 & Pickup (light, gasoline) & 15 \\
+        Sedan (mid, e.g., Accord) & 16 & Pickup (heavy, diesel) & 18 \\
+        Crossover (small) & 20 & Minivan/MPV & 18 \\
+        Crossover (mid) & 14 & & \\
+        \hline
+    \end{tabular}
+\end{table}
+
+The calculation is done entirely on the server. After the trip, the \texttt{calculateRideTokens} Cloud Function reads the trip's rides, measures the route itself through the Google Routes API, reads the stored fuel price, and writes the award with a per-passenger breakdown; the app sends only a trip identifier. The distance is that of the optimal ordering of the trip's stops, not the path the driver actually took. This is deliberate: the driven path is not stored on the server, a driver cannot earn more by taking a longer way round, and the award can be reproduced later from the same stops. Each leg is rounded to the nearest 10~m before the tokens are allocated, so that the figures printed on the admin review screen can be checked by hand. The function is idempotent, so a retry returns the existing award instead of paying twice.
+
+Each driver earns Ride Tokens based on the distance traveled and the number of passengers. To balance fuel expenditure with CES incentives, we introduce a conversion factor that adjusts the number of tokens awarded per peso spent on fuel.
+
+The base formula is:
+\begin{equation}
+    \text{Ride Tokens} = \frac{\text{Fuel Cost per Trip}}{\text{Ride Token Regulator}}
+\end{equation}
+Where: 
+\begin{itemize}
+    \item Fuel cost per trip is determined using real-time diesel and gasoline prices. Fuel consumption/efficiency per vehicle is dependent on the vehicle type, which is declared upon registration.
+        \begin{equation}
+            x = \text{Fuel price (PHP/L)}
+        \end{equation}
+    
+        \begin{equation}
+            y = \text{average fuel efficiency (km/L)}
+        \end{equation}
+        
+        \begin{equation}
+            d = \text{distance traveled (km)}
+        \end{equation}
+        
+        \begin{equation}
+            \text{Fuel Cost per Trip} = x * (\frac{d}{\text{y}})
+        \end{equation}
+
+    \item The \textit{Ride Token Regulator}, \textbf{5}, ensures the system remains engaging over multiple semesters rather than being easily maxed out in a few weeks and balances token distribution.
+
+    \item The final Ride Token value is rounded up to the nearest hundredth.
+
+\end{itemize}
+
+For each additional passenger, their ride token contribution is determined by:
+\begin{equation}
+    \frac{\text{Passenger Distance from Destination}}{\text{Total Shared Distance - Passenger Distance from Destination}}
+\end{equation}
+Where: 
+\begin{itemize}
+    \item \textit{Passenger Distance from Destination} = Distance from the passenger’s pick-up/drop-off point to the final destination
+
+    \item \textit{Total Shared Distance} = Total distance from the first passenger’s pick-up to the final destination
+\end{itemize}
+
+Only drivers receive Ride Tokens; passengers do not earn tokens. When passengers share the same pick-up point and the same destination, their contributions are split equally, which also avoids a zero denominator in the distance ratio above. Values are rounded up to the nearest hundredth, as stated earlier.
+
+An early drop-off, in which a passenger leaves the vehicle before the final drop-off, earns a flat 1 Ride Token for each such passenger, whatever its length or location. An early passenger does not take part in the distance calculation above and does not change anyone else's share. This was chosen because an early passenger's exit point can be any GPS position: when it fell a few metres from another passenger's pick-up, the ratio in Equation~3.6 divided by a near-zero gap and produced values of 67 to 101 Ride Tokens for rides that burned only a few tokens' worth of fuel. A trip made only of early drop-offs needs no fuel price or vehicle efficiency. The flat rate is not tied to fuel, so very short early rides are paid more than the fuel formula would give, and long ones less; this trade-off is accepted.
+
+The ceilings above are enforced on the server. The driver's running total cannot exceed 300 Ride Tokens in the current semester or 1,800 across the programme. A ride that would pass a ceiling still completes, but the award is cut to the amount that fits and the excess is forfeited, not carried over; the ledger keeps both the uncapped value and the reason for the cut so that the administrator can see what the trip was really worth. The semester is defined by the dates that the administrator sets on the Semester Period screen. Until those dates are set, only the 1,800 ceiling applies.
+
+\vspace{1em}
+
+To better understand the scheme, the following example scenarios are provided. They use a fuel price of PHP 52 per liter, the example price used in the original proposal, and a driver who declared the mid-size SUV category (12~km/L, Table~\ref{tab:efficiency}). The vehicle category matters: the same 11~km trip earns about 2.08 Ride Tokens for a scooter and 9.54 for this SUV, so reaching the semester cap takes between about 32 and 145 shared rides depending on the vehicle.
+
+\vspace{1em}
+\noindent\textit{Scenario A: Long-Distance Carpooler (11 km one way)}
+\begin{itemize}
+    \item A Student Driver picks up Student Passenger A 11 km away from USC-TC.
+    \item Their vehicle consumes 11/12 $\approx$ 0.92 L of fuel for the 11 km.
+    \item At PHP 52 per liter, the fuel cost is about PHP 47.67 per trip.
+    \item Applying the Ride Token Regulator:
+    \[
+    \frac{47.67}{5} \approx 9.54 \text{ Ride Tokens per trip}
+    \]
+    \item For both pickup and drop-off:
+    \[
+    9.54 \times 2 = 19.08 \text{ Tokens per day}
+    \]
+    \item To reach 3 CES Points (300 Tokens per semester cap):
+    \[
+    \frac{300}{9.54} \approx 32 \text{ shared rides}
+    \]
+\end{itemize}
+
+% TODO: regenerate the scenario summary figure with the amended figures above
+% (the old image shows 11.44 tokens and 26 rides at 10 km/L).
+%\begin{figure}[htbp]
+%    \centering
+%    \includegraphics[width=0.84\textwidth]{images/scenario a.png}
+%    \caption{Scenario A Calculation Summary}
+%\end{figure}
+
+\vspace{1em}
+
+\noindent\textit{Scenario B: Short-Distance Carpooler (4 km one way)}
+\begin{itemize}
+    \item A Student Driver picks up Student Passenger A 4 km away.
+    \item Fuel consumption: 4/12 $\approx$ 0.33 L for 4 km.
+    \item At PHP 52 per liter, fuel cost $\approx$ PHP 17.33.
+    \item Token Regulator formula:
+    \[
+    \frac{17.33}{5} \approx 3.47 \text{ Tokens per trip}
+    \]
+    \item Round trip: \( 3.47 \times 2 = 6.94 \text{ Tokens/day} \)
+    \item Rides needed to reach 300 Tokens:
+    \[
+    \frac{300}{3.47} \approx 87 \text{ shared rides}
+    \]
+\end{itemize}
+
+% TODO: regenerate the scenario summary figure (old image: 4.16 tokens, 72 rides).
+%\begin{figure}[htbp]
+%    \centering
+%    \includegraphics[width=0.84\textwidth]{images/scenario b.png}
+%    \caption{Scenario B Calculation Summary}
+%\end{figure}
+
+\vspace{1em}
+
+\noindent\textit{Scenario C: Multi-Passenger Pickup Distribution}
+To prevent over-rewarding for multiple pickups, tokens are distributed proportionally based on distance, following Equation~3.6 exactly as proposed:
+
+\begin{itemize}
+    \item \textbf{A} (11 km): full trip value — 9.54 Tokens
+    \item \textbf{B} (9 km): \( \frac{9}{11-9} = 4.5 \) Tokens
+    \item \textbf{C} (7 km): \( \frac{7}{11-7} = 1.75 \) Tokens
+    \item \textbf{D} (4 km): \( \frac{4}{11-4} \approx 0.571 \) Tokens
+    \item \textbf{Total Tokens Earned:} 16.36 (rounded up from 16.355)
+    \item For 300 Tokens:
+    \[
+    \frac{300}{16.36} \approx 19 \text{ shared rides}
+    \]
+\end{itemize}
+
+% TODO: regenerate the scenario summary figure (old image: 18.26 tokens, 17 rides).
+%\begin{figure}[htbp]
+%    \centering
+%    \includegraphics[width=0.92\textwidth]{images/scenario c.png}
+%    \caption{Scenario C Calculation Summary}
+%\end{figure}
+
+\vspace{1em}
+The first passenger always contributes the full token value for the total distance. The ratio in Equation~3.6 does not depend on the vehicle and grows without bound as a passenger's pickup point approaches the first passenger's. This is acceptable for regular rides because pickup and drop-off points are set in advance by the administrator and are never arbitrarily close; arbitrary exit points are handled by the flat early drop-off rate above.
+
+\section{Safety Measures}\label{sec:safety}
+\subsection{Registration}
+To ensure the security and accountability of all users within the platform, especially since this service involves ridesharing among students, the following safety measures and verification steps will be strictly implemented during registration and ongoing use:
+
+\vspace{1em}
+\indent Document Verification Requirements (for Drivers)
+\begin{enumerate}
+    \item USC School ID
+    \begin{itemize}
+        \item Confirms the applicant's identity as a USC student
+    \end{itemize}
+
+    \item Study Load
+    \begin{itemize}
+        \item Confirms the driver is a currently enrolled student at USC
+    \end{itemize}
+        
+    \item Parent’s Permit 
+    \begin{itemize}
+        \item Required for students as part of the general consent for student participation
+    \end{itemize}
+
+    \item Valid Driver’s License  
+    \begin{itemize}
+        \item Ensures the driver is legally allowed to operate a vehicle
+    \end{itemize}
+        
+    \item OR/CR (Official Receipt and Certificate of Registration)  
+    \begin{itemize}
+        \item Verifies ownership and legality of the vehicle used
+    \end{itemize}
+        
+    \item Proof of USC-TC Self-Driven Motor Vehicle Pass (MVP)   
+    \begin{itemize}
+        \item Confirms the driver’s eligibility to bring and park a vehicle on campus
+    \end{itemize}
+
+    \item Proof of Second Helmet (for Motorcycle Drivers)   
+    \begin{itemize}
+        \item Ensures compliance with safety laws and readiness to accommodate a passenger responsibly.
+    \end{itemize}
+       
+\end{enumerate}
+
+\vspace{1em}
+\indent Document Verification Requirements (for Students)
+\begin{enumerate}
+    \item USC School ID
+    \begin{itemize}
+        \item Confirms the applicant's identity as a USC student
+    \end{itemize}
+
+    \item Study Load
+    \begin{itemize}
+        \item Confirms the passenger is a currently enrolled student at USC
+    \end{itemize}
+        
+    \item Parent’s Permit 
+    \begin{itemize}
+        \item Required for students as part of the general consent for student participation
+    \end{itemize}
+\end{enumerate}
+
+\vspace{1em}
+\indent Terms of Use and Behavioral Guidelines:
+\begin{enumerate}
+    \item Agreement to Terms and Conditions 
+    \begin{itemize}
+        \item All users must agree to the platform’s policies regarding conduct, usage, and responsibilities.
+    \end{itemize}
+        
+    \item Rules and Regulations 
+    \begin{itemize}
+        \item Clear guidelines will be provided on acceptable behavior, penalties for misconduct, and operational procedures.
+    \end{itemize}
+
+    \item Waiver of No Liability  
+    \begin{itemize}
+        \item A signed agreement acknowledging that USC and the platform are not liable for personal incidents outside their direct control.
+    \end{itemize}
+\end{enumerate}
+
+The documents are uploaded to Cloud Storage, where each file is limited to 5~MB and to PDF, JPEG, or PNG format, and can be read only by the applicant and the administrators. An application cannot be changed after it is submitted, and no ride feature can be used until an administrator approves it.
+
+These requirements aim to create a trusted, school-exclusive ridesharing environment, where safety, transparency, and accountability are prioritized. Additional in-application features like user ratings, ride tracking, and authenticated logins will further support secure ride experiences for both passengers and drivers.
+
+\vspace{1em}
+\subsection{Ethical Considerations and Data Management}
+\begin{enumerate}
+    \item \textbf{Minimizing the Risk of Harm for the Preliminary Survey}: For the preliminary Google Forms survey aimed at understanding participants' residential locations and commuting preferences, the primary risk involves the sensitivity of location-related data. To minimize this, data collection will be strictly limited to what is essential for focusing the app's geographical development. Participation will be voluntary, and respondents will be assured that their specific location data will be handled with care, potentially aggregated or pseudonymized early in the analysis to prevent individual identification and used solely for the purpose of tailoring the application's scope. No adverse consequences will arise from choosing not to participate or from any specific responses provided.
+
+    \item \textbf{Minimizing the Risk of Harm during App User Testing}: During the user testing phase of the ridesharing application prototype, participant safety is paramount due to the potential for physical interactions. To mitigate risks, the application includes three safety measures. First, drivers are verified before they can offer rides, through confirmation of university enrollment, a valid driver's license, and a valid USC campus vehicle sticker. Second, a rating system lets passengers rate their drivers to foster accountability. Third, an emergency button lets any user raise an alert during a ride. Pressing it sends a notification to the administrators and creates an entry in the admin logs showing the name of the user who pressed it, their role (driver or passenger), and the date and time it was pressed. The button does not contact the authorities or share the user's live location; the administrators decide how to follow up with the user.
+
+    \item \textbf{Obtaining Informed Consent}: A robust informed consent process will be implemented for both the preliminary survey and the application testing phases. For the Google Forms survey, participants will receive a clear explanation of its purpose (to gather data on location and commuting preferences for app development), how their data will be used, and an assurance of voluntary participation. For the application prototype, this process will be integrated into the onboarding interface, and the microphone is used only after a plain-language consent dialog appears before the operating system's own permission prompt. Users (both drivers and passengers) will receive plain-language information about the app’s purpose, functionality, specific data usage (including location tracking and ride history), potential risks associated with ridesharing, and their right to withdraw at any time without penalty, requiring their active acknowledgement and agreement before participation.
+
+    \item \textbf{Protecting Privacy and Confidentiality}: Protecting user privacy and data confidentiality is crucial for both the survey and app testing. Data from the Google Forms survey will be securely managed, with access restricted to the research team, and used solely for its stated purpose. For the application, sensitive data such as location, personal identifiers, and ride history will be managed using Firebase, adhering to principles like data minimization (collecting only essential data like user IDs, ride-specific location, history, and Ride Token transactions). Personal data will be pseudonymized using unique identifiers in Firebase Firestore. Firebase's built-in encryption (AES-256 for data at rest, TLS 1.3 for data in transit), strict access controls via Firebase Security Rules, and an automated data retention policy (e.g., deletion after 12 months or upon withdrawal via Cloud Functions) will be employed to safeguard information and comply with regulations like GDPR. Users will have control over their data, including rights to view, correct, or request deletion. In the application, retention is carried out by two Cloud Functions. A daily job deletes rides, reports, ratings, emergency alerts, and requests older than 12 months. A user can also delete their own account from Account Settings, which removes the login, uploaded documents, profile, and the records tied to that user; this is refused while the user has an active ride, so that a trip partner is never left stranded. Before anything is deleted, the Ride Token history is copied into an anonymous record that holds only the amount, status, and dates, so that aggregate research data survives without identifying anyone. The names, ratings, and vehicle details that the two riders see are removed from a completed ride 10 days after it ends, leaving only an anonymous ride record.
+
+\end{enumerate}
+
+\section{Testing Plan} 
+\subsection{Preliminary Survey (Baseline Data Collection)}
+\label{sec:prelim}
+\indent Before the application is launched for testing, a Google Forms survey is distributed to all enrolled USC Computer Engineering students. It has two purposes: to collect baseline data for the development of the application, and to recruit volunteers for user acceptance testing (Section~\ref{sec:phases}). The full list of questions is in Appendix~\ref{app:prelim}. The form collects the following:
+
+\begin{itemize}
+    \item \textbf{Location.} The city where the student primarily lives in the first semester of A.Y. 2026--2027 (Cebu City, Mandaue City, Lapu-Lapu City, Talisay City, or another place), and the nearest major landmark to where the student starts his or her daily commute. Respondents are told not to enter an exact house number or street address. The landmarks help the proponents choose pick-up and drop-off zones.
+    \item \textbf{Devices.} The operating system of the student's phone (iOS, Android, or both), the phone model, and the network carriers used for mobile data. These show which platforms and network conditions the application must work on.
+    \item \textbf{Interest in user acceptance testing.} Whether the student wants to be a pilot tester for two weeks, and the role he or she wants to take (both driver and passenger, or passenger only). A note on the form states that only student-drivers can earn CES points.
+    \item \textbf{Vehicle (for students who choose the driver role).} Whether the vehicle with the USC Motor Vehicle Pass sticker is a car or a motorcycle. The study is limited to one registered vehicle per student-driver. Car drivers state the fuel type, since only gasoline-powered and diesel-powered vehicles are accepted, and the Ride Token computation uses the fuel price. Motorcycle drivers state whether they have a spare helmet to lend to a passenger.
+\end{itemize}
+
+Students who say they are interested receive an email with the date and time of the onboarding for user acceptance testing.
+
+This survey data helps refine the application's target user base, determine the driver-to-passenger ratio, and choose the pick-up and drop-off zones.
+
+The survey is sent to all enrolled Computer Engineering students ($N = 378$). The target number of responses follows Cochran's formula \cite{cochran1977} with a 95\% confidence level ($z = 1.96$), a 5\% margin of error ($e$), and an assumed proportion $p = 0.5$:
+\begin{equation}
+    n_0 = \frac{z^2\, p\,(1-p)}{e^2} \approx 384.16, \qquad
+    n = \frac{n_0}{1 + \frac{n_0 - 1}{N}} \approx 190.8 \;\Rightarrow\; 191 \text{ responses.}
+\end{equation}
+Respondents receive CES points or an entry in a raffle as an incentive for completing the survey.
+
+\subsection{Testing Phases}
+\label{sec:phases}
+Testing is carried out in four phases. The first two phases are referred to as alpha testing, and are performed by the proponents. Table~\ref{tab:phases} summarizes the phases and the objective each one supports.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Testing Phases}
+    \label{tab:phases}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.17\textwidth}|>{\raggedright\arraybackslash}p{0.48\textwidth}|>{\raggedright\arraybackslash}p{0.17\textwidth}|}
+        \hline
+        \textbf{Phase} & \textbf{Scope} & \textbf{Objective} \\
+        \hline
+        1. Unit testing (alpha) & Ride matching, Ride Token system, and API integration & Objectives 2 and 3 \\
+        2. System testing (alpha) & The whole app together: two emulators, the admin side, and the live backend & Objective 1 \\
+        3. Beta testing & 12 volunteer testers use the application on 10 physical iOS and Android devices (rides are played on emulators), followed by the feedback survey & Objective 1 \\
+        4. User acceptance testing (UAT) & 60 Computer Engineering students install the application (Android through Firebase App Distribution, iOS through Xcode) and use it on physical devices (Android or iOS), followed by the feedback survey & Objective 4 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\paragraph{Reference standard.} The four phases follow the test levels described in ISO/IEC/IEEE 29119 (Section~\ref{sec:standards}): unit testing of individual rules, system testing of the integrated application, and acceptance testing by the intended users, with beta testing by outside volunteers added before the acceptance phase. Following the documentation practice of the standard, each system test case records a step, an expected result, and an actual result per device, and the beta tasks are kept as a fixed written task list (Appendix~\ref{app:beta}). The expected results come from the specified rules, such as the 400~m acceptance limit, the 100~m route-match radius, and the token scenarios of Section~\ref{sec:tokens}, which corresponds to the requirement-based test design described in Part 4 of the standard. Part 11 of the standard, on AI-based systems, is a pointer for the mood classifier, which is evaluated on a held-out test set and on real-world songs (Chapter~4). The standard serves only as a reference framework; the testing was not assessed for conformance with it.
+
+\paragraph{Testing approach.} The tester tasks and the survey are black box testing: the testers do not know the code and judge the application only by the inputs they give and the outputs they see \cite{gfgbox}. Beta testing means that a limited group of real users tries the application and gives feedback, and acceptance testing means that end users check that the application meets their requirements in realistic scenarios \cite{gfgacceptance}. The results are kept in two groups. Functional testing checks that the application works according to its specified requirements \cite{gfgfunctional}; it is the task list, where each task is recorded as Pass, Fail, or Could not try. Non-functional testing checks how well the application works rather than what it does \cite{gfgnonfunctional}; here it is the System Usability Scale and the survey questions on speed, notifications, readability, reliability, and privacy. These are the testers' perceptions, not measurements, and no phase times responses under load, so this study does not claim performance or load testing. The user acceptance phase is judged mainly on these usability and perception questions. The automated and rules tests run by the proponents are white box testing, because the tester knows the code, and checks made with partial knowledge of the internals, such as comparing a token award with the formula, are grey box testing \cite{gfgbox}.
+
+\paragraph{Installing the application on testing devices.}\label{sec:install}
+Android and iOS builds are installed in different ways. For alpha and beta testing, and for iOS devices in UAT, the application is built directly onto the device. Android builds for UAT are released through Firebase App Distribution instead (Section~\ref{sec:distribution}).
+
+On Android devices during alpha and beta testing, the proponents built the application onto the device from Android Studio. On iOS devices, the application was installed from Xcode in the following steps, which are also listed in Appendix~\ref{app:download}.
+\begin{enumerate}
+    \item The person installing the build signs in with an Apple ID in Xcode.
+    \item A Bundle Identifier is created for that Apple ID in Firebase and set up in the Google Cloud Console. A new Bundle Identifier is made for each Apple ID.
+    \item The GoogleService-Info.plist file of the Bundle Identifier is downloaded from Firebase and configured in Xcode.
+    \item In Xcode, under Signing \& Capabilities, the Apple ID is selected under Team and the Bundle Identifier is entered.
+    \item The iOS device is plugged in, and Developer Mode is enabled on it.
+    \item After the device restarts, the application is built onto it.
+    \item On the device, the Apple ID is trusted under General, VPN \& Device Management in the Settings application.
+    \item The SanCarGo application can then be opened.
+\end{enumerate}
+For alpha and beta testing, the proponents signed in with their own Apple IDs and used their own Bundle Identifiers. For the iOS devices in UAT, the proponents asked each participant to sign in with his or her Apple ID in Xcode during onboarding, on the proponents' computer, and every step after that was done in the same way. The proponents used free Apple ID accounts, and an application signed with a free Apple ID stops opening after seven days. The proponents therefore reinstalled the application on each iOS device after seven days.
+
+\subsubsection{Phase 1: Unit Testing}
+Unit testing is automated and is white box testing. It runs the Flutter static analysis (\texttt{flutter analyze}), the Flutter test suite (\texttt{flutter test}), the Cloud Functions test suite (\texttt{npm run test:functions}), the Firestore and Storage rules tests (\texttt{npm run test:rules}, run in the Firebase emulator), and a set of nine verification scripts. The Flutter tests are grouped into six areas: accounts and registration, ride flow and matching, tokens, fuel, and the CES period, admin, reports, and ratings, mood detection, and shared interface and safety. The scripts check that the server campus geofence agrees with the client, the \texttt{matchRide} rules (400 m limit, campus-side direction, capacity, and vehicle filters), the Ride Token arithmetic against the scenarios in this manuscript, the routes and Places parsers, the ranking of alternative drop-off points, the Firestore and Storage security rules, and the DOE fuel price parser, which can also be run live against the current DOE report. A few parts have no automated test of their own, namely the eleven push notification triggers, the privacy retention functions, the callable functions that create ride requests and calculate Ride Tokens, the emergency report function, and some client services for the trip lifecycle and notification navigation. These are covered by the system test cases instead.
+
+\subsubsection{Phase 2: System Testing}
+System testing runs 32 cases that exercise the application as a whole through its screens, with some checks made against the backend. The cases are grouped into six areas, accounts and admin (S-A1 to S-A6), ride flow (S-B1 to S-B8), matching filters (S-C1 to S-C6), tokens and fuel (S-D1 to S-D4), notifications and chat (S-E1 to S-E4), and safety and privacy (S-F1 to S-F4), and they are listed in Appendix~\ref{app:systemcases}. Each case lists a step, an expected result, and the actual result per device, together with who ran it, the date, and any defect found. The cases are executed on two emulators, with an admin account and the live backend, and then repeated on three physical devices (Table~\ref{tab:devices}). On the physical devices each case is run in five rounds, and it passes only when all five rounds succeed and fails if at least one round fails. In addition, a set of measurements is recorded per device, taking what was observed rather than an estimate: the time from a ride request to the driver prompt, the time from the driver's acceptance to the passenger's screen update (median of 5 runs each), the cold start time (median of 3 runs), the number of crashes and freezes counted from Firebase Crashlytics and the testers' notes, the number of correct mood detections out of nine test clips (three Lively, three Chill, three Quiet), and the size of the debug build.
+
+\paragraph{Limit on iOS notifications.} The iOS devices could not receive push notifications during alpha testing, because the proponents used free Apple IDs and did not have paid Apple Developer accounts (Section~\ref{sec:scope}). The notification cases (S-E1 to S-E4) could therefore be run only on the emulators and on the Android phone, and not on the two iPhones. Chat itself works on iOS inside the application, but a message is not announced when the application is closed or in the background.
+
+Every problem found is entered in a defect log with the test that found it, what happened, a severity, an owner, and a status (open, fixed, or won't fix). Severity follows four levels: Critical (data loss, a safety or security problem, or a core flow that is impossible), Major (a feature fails with no workaround), Minor (it works but wrongly), and Cosmetic (it only looks wrong). Alpha testing is considered complete when the exit criteria in Table~\ref{tab:exit} are met.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Alpha Testing Exit Criteria}
+    \label{tab:exit}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.42\textwidth}|>{\raggedright\arraybackslash}p{0.46\textwidth}|}
+        \hline
+        \textbf{Measure} & \textbf{Target} \\
+        \hline
+        Flutter unit tests passing & 100\% \\
+        Cloud Functions and rules checks passing & All nine verification scripts \\
+        System test cases passing & 90\% or more of the 32 cases, none blocked without a reason \\
+        Open Critical defects & 0 \\
+        Open Major defects & 0, or each has a documented workaround \\
+        Crashes in the system runs & 0 on the core flow (S-B1 to S-B3) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Table~\ref{tab:devices} lists the devices used: the Google Pixel 8 Pro emulator in Android Studio, and three physical devices (one Android phone and two iPhones).
+
+\begin{table}[htbp]
+    \centering
+    \caption{Devices Used in Alpha Testing}
+    \label{tab:devices}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Device} & \textbf{Operating system} & \textbf{Used as} \\
+        \hline
+        Google Pixel 8 Pro (Android Studio emulator) & Android 16.0 (Baklava), API 36 & Emulator \\
+        Samsung Galaxy A06 5G & Android 16.0 (Baklava), API 36 & Android (physical) \\
+        iPhone 17 & iOS 26.6.2 & iOS 1 (physical) \\
+        iPhone 15 Pro Max & iOS 26.6.1 & iOS 2 (physical) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsubsection{Phase 3: Beta Testing}
+Beta testing checks the application's functions with people who are not part of the development team. It is black box and functional testing. It involved 12 volunteer testers from outside the Computer Engineering department (such as family and friends of the proponents), using 10 physical devices: four iPhones and six Android phones (Table~\ref{tab:betadevices}). Participation was voluntary, and the personal data collected were limited to the tester's account details and a tester code on the survey. Beta testing itself does not require approval from the Research Ethics Committee (REC); only the beta feedback survey is submitted to it.
+
+Testers did not drive or ride. The inbound and outbound rides were played on two Android emulators in Android Studio (Medium Phone with Android 16, and Google Pixel 10a with Android 17), one playing the passenger and one the driver, with simulated GPS, because a ride needs a driver and a passenger in different places at the same time. Moving a vehicle means changing the emulator's location, so nobody had to be on or near campus. The proponents supplied the GPS spots: a spot off campus within 100~m of an approved pickup point for the passenger, a spot within 400~m of that pickup point for the driver, and a spot on campus near the Bunzel Lobby for finishing the trip. A song was played near the driver emulator so that the microphone had something to classify. Every other feature was tested physically: each tester had one physical device with SanCarGo installed. Because registration accepts only \texttt{@usc.edu.ph} email addresses, testers without a USC email used dummy USC accounts created for testing only. Testers signed up with these accounts themselves. The proponents controlled each mailbox so that the verification email could be confirmed, and provided the files to upload for registration. Beta testers did not register their own accounts: the proponents gave each of them a pre-made dummy login in the USC email domain (usc.edu.ph). Because only four iPhones were available, the iOS testers shared devices. The iPhones could not receive push notifications, and a chat message on iOS is seen only inside the application, so the testers tried the notification and chat tasks on the emulators.
+
+Before each session, the proponents checked that the Cloud Functions and the security rules were deployed and matched the code, that at least one approved pickup point and one drop-off point existed, that the administrator fuel price screen showed a synced price (without one, Ride Tokens cannot be computed), and that both emulators could log in, show the map, and receive a test notification. Testers were told that moving means changing the emulator's location, that the emergency button only alerts the administrators and does not call anyone, so they should press Cancel rather than Confirm, that a few Settings rows say they will be added in a future phase, and that nothing in the application involves money.
+
+Each tester followed the task list in Appendix~\ref{app:beta} in order, which takes about 45 minutes with no stopwatch. It has 14 required tasks (T1 to T3 for everyone, and W1 to W11 for one ride) and three optional tasks (O1 to O3) on cancellations and the outbound direction. After the tasks, each tester answered one feedback survey (Section~\ref{sec:survey}, Appendix~\ref{app:survey}), recording Pass, Fail, or Could not try for every task, the System Usability Scale, and ratings of their experience. The beta feedback survey is submitted to the Research Ethics Committee (REC).
+
+The proponents separately carried out team checks that testers cannot see, as white box and grey box testing. They ran the automated checks on the version under test, registered one account for real (uploading documents, verifying the email, and then approving, denying, and suspending it from the admin side), and went through the admin screens (reviewing a report, approving and dismissing a Ride Token claim, adding and deleting a ride point, refreshing the fuel price, and saving a semester period). They confirmed one emergency alert, checking that every approved admin receives the notification and that the event appears in the admin logs. They took one finished trip and compared its token award with the formula, and checked that a client cannot create a ride request directly, write the reward ledger, or read the emergency alerts. One run on a real phone by the proponents is optional, to cover real GPS, battery, background tracking, and push notifications.
+
+Emulator-played rides have limits. They do not show how real GPS drifts on a moving vehicle, battery use and heat, or whether live tracking survives the phone being in a pocket. These limits are stated in Chapter~4 together with the results. The proposed pass marks are in Table~\ref{tab:betapass}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Proposed Pass Marks for Beta Testing}
+    \label{tab:betapass}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.5\textwidth}|>{\raggedright\arraybackslash}p{0.38\textwidth}|}
+        \hline
+        \textbf{Measure} & \textbf{Target} \\
+        \hline
+        Task results reported as Pass (ignoring Could not try) & 80\% or more \\
+        Core tasks (T1, W2, W4, W6, W8) & No crash reported on any of them \\
+        System Usability Scale average & 68 or higher \\
+        Team checks & All done, with no Critical problem left open \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Physical Devices Used in Beta Testing}
+    \label{tab:betadevices}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|c|l|l|}
+        \hline
+        \textbf{No.} & \textbf{Device} & \textbf{Platform} \\
+        \hline
+        1 & iPhone 17 & iOS \\
+        2 & iPhone 16 & iOS \\
+        3 & iPhone 15 Pro Max & iOS \\
+        4 & iPhone XR & iOS \\
+        5 & Samsung Galaxy Note 8 & Android \\
+        6 & Samsung Galaxy A06 5G & Android \\
+        7 & Samsung Galaxy A04 & Android \\
+        8 & Samsung Galaxy S22 Ultra & Android \\
+        9 & Redmi 12C & Android \\
+        10 & Huawei Nova Y61 & Android \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsubsection{Phase 4: User Acceptance Testing}
+UAT evaluates the application in real use. Up to 60 Computer Engineering students take part, with Years 1 to 3 prioritized. The number is set by the proponents' capacity to supervise testing and by the number of participants needed for rides to match (for example, enough drivers and passengers at the same time), rather than by a formula. UAT runs for at least two weeks, and it is conducted only after REC approval. Student-driver participants are rewarded with CES points through a CES project proposal, which the USC Community Extension Services (CES) Office has fully approved. Student-driver participants must have a valid driver’s license and a valid USC campus vehicle sticker, and motorcycle drivers must also show proof of a second helmet. Ride Tokens earned during UAT are not converted to CES points; once the application is live, tokens convert to CES points as described in Section~\ref{sec:tokens}. All UAT participants also join a raffle (a single prize drawing, with the GCash prize amount announced at onboarding). UAT uses the same feedback survey as beta testing (Section~\ref{sec:survey}) and is judged mainly on its usability and perception questions, which are non-functional.
+
+\paragraph{Distribution of the application.}\label{sec:distribution}
+Android builds are released to the UAT participants through Firebase App Distribution, a free service of Firebase that delivers pre-release builds to a list of invited testers. The earlier Kapiot project released its alpha build through the same service~\cite{pepito2022}. It was chosen for three reasons. First, the application needs no app store listing or review, so the proponents can release a build as soon as it is ready. Second, only the people the proponents invite can install it, which keeps the pre-release version limited to the UAT participants who gave their consent. Third, the Firebase tools are already part of the project (Section~\ref{sec:tools}), so no new account or service is needed. iOS builds are not released this way; they are installed from Xcode during onboarding (Section~\ref{sec:install}).
+
+The Android release follows five steps, which are shown in Appendix~\ref{app:download}. The proponents upload the build under test to Firebase App Distribution with short release notes, and add the email address of each participant as a tester. Only email addresses in the usc.edu.ph domain were invited, so the pre-release version was limited to USC students. The participants were not placed in groups: each one chose the role (driver or passenger) that he or she wanted to test. The service sends each participant an invitation email with a link. The participant opens the link on the phone that will run the application, signs in with his or her USC (usc.edu.ph) Google account, and accepts the invitation. The participant then follows the prompts to download and install the application, which includes allowing the installation when the phone asks. Finally, the participant opens the application, registers with a USC email, and waits for the administrator's approval before following the tester tasks. An invitation is valid for 30 days, and a participant whose invitation has expired asks the proponents for a new one. When the proponents release a corrected build during the UAT period, the testers are notified and update through the same service, so every participant tests the same version.
+
+\subsection{Test Cases for Key Features} %\\
+\indent Each feature will undergo specific test scenarios to confirm that it performs as expected. Below is a breakdown of the major features and their corresponding validation methods:
+\begin{enumerate}
+    \item Authentication and Sign-Up
+        \begin{itemize}
+            \item Test Scenario: A user registers using their USC email.
+            \item Expected Outcome: 
+            A verification link is sent to the email address, and the account can be used only after the link is confirmed and an administrator approves the registration.
+            \item Testing Method: Manual testing by attempting sign-ups with valid and invalid credentials.
+        \end{itemize}
+
+    \item Ride Request and Matching
+        \begin{itemize}
+            \item Test Scenario: A passenger requests a ride from their location to USC.
+            \item Expected Outcome: The system assigns a nearby available driver, who receives a notification to accept or decline the request.
+            \item Testing Method: Functional testing using different device combinations (driver and passenger accounts).
+        \end{itemize}
+
+    \item Live Tracking and Navigation
+        \begin{itemize}
+            \item Test Scenario: A passenger should be able to track their assigned driver in real-time.
+            \item Expected Outcome: The application continuously updates the driver’s location on the map.
+            \item Testing Method: Field testing using two devices in separate locations.
+        \end{itemize}
+        
+    \item Ride Completion and Token System
+Test Scenario: Upon completing a ride, the system awards Ride Tokens to the driver.
+Expected Outcome: The correct amount of tokens is credited to the driver’s account.
+Testing Method: Simulated rides with pre-defined fare calculations to check accuracy.
+
+    \item CES Point Conversion
+        \begin{itemize}
+            \item Test Scenario: A user redeems 100 ride tokens for 1 CES point.
+            \item Expected Outcome: The CES point is correctly recorded in the system and appears in the user’s profile.
+            \item Testing Method: Admin verification of CES point logs.
+        \end{itemize}
+        
+    \item Admin Controls
+        \begin{itemize}
+            \item Test Scenario: An admin suspends a user who has violated the rules.
+            \item Expected Outcome: The user’s account is disabled, preventing further ride requests.
+            \item Testing Method: Admin attempts to suspend and reinstate test accounts.
+        \end{itemize}
+\end{enumerate}
+
+\vspace{1em}
+
+\subsection{User Feedback and Google Forms Evaluation}
+\label{sec:survey}
+\indent After beta testing and UAT, testers complete one Google Forms survey, sent to each tester after the tasks. Testers are identified by a tester code given by the proponents, so that no names are needed. The survey has five parts, which are listed in Appendix~\ref{app:survey}:
+
+\begin{enumerate}
+    \item \textbf{About the tester}: the tester code and how often the tester uses ridesharing applications (never, sometimes, or often).
+    \item \textbf{Task results}: Pass, Fail, or Could not try for every task that was attempted, with a text box asking what the tester saw instead for every Fail.
+    \item \textbf{System Usability Scale (SUS)}: ten statements rated from 1 (strongly disagree) to 5 (strongly agree).
+    \item \textbf{Experience}: seven statements rated from 1 to 5 on speed, notification timing, error messages, readability of the screens and map, how easy the emergency button is to find, why location and microphone access are requested, and how safely personal information is handled.
+    \item \textbf{Open questions}: whether the application crashed, froze, or lost the tester's place; the most confusing part; what was liked most; the one change that would improve it most; and whether the tester would use the application to get to or from campus.
+\end{enumerate}
+
+The SUS score of each tester is computed by subtracting 1 from the answer for every odd-numbered statement, subtracting the answer from 5 for every even-numbered statement, adding the ten values, and multiplying the sum by 2.5, which gives a score from 0 to 100:
+\begin{equation}
+    \text{SUS} = 2.5 \left[ \sum_{i \in \{1,3,5,7,9\}} (x_i - 1) + \sum_{i \in \{2,4,6,8,10\}} (5 - x_i) \right]
+\end{equation}
+where $x_i$ is the answer to statement $i$. The scores are averaged over the testers, and a score of about 68 is the usual benchmark for average usability. The experience ratings of Part 4 are reported as averages and are testers' perceptions, not measurements.
+
+After the survey closes, the proponents read every Fail comment, group the repeated ones, and give each real problem a severity (Critical, Major, Minor, or Cosmetic, as defined in Section~\ref{sec:phases}).
+
+
+\section{Project Checking Strategy}
+\indent Following the panelists' instruction, the project checking is a live demonstration of actual on-road activity (pickup, driving, and drop-off at the campus) with the participants physically present, so the proponents and panelists can observe system behavior, user interaction, and backend updates concurrently. The participants are drawn from the UAT participants rather than from a separately recruited group. The project checking is scheduled between November 30 and December 4, 2026, in one of the Computer Engineering classrooms or laboratories on the second floor of the Bunzel building. The route of the demonstration is built around Oakridge, which is the pick-up point of the inbound trip.
+
+\indent The demonstration will follow the structured roles below:
+\begin{itemize}
+    \item Two (2) Student-Drivers will proceed through the registration, log in to their dashboard menu, and navigate through the app’s driver dashboard.
+    \item Four (4) Student-Passengers also registered and logged in through their respective user flow, viewing their version of the dashboard post-verification.
+    \item The Proponents will manage the approval of all participant registrations using the admin dashboard and monitor backend data changes via Firebase.
+\end{itemize}
+
+\vspace{1em}
+\indent The simulation was divided into two major trip scenarios:
+
+\subsection{Inbound Trip (iOS – Driver A)}
+\vspace{1em}
+    \begin{enumerate}
+        \item Driver A starts at Metro Supermarket, A.S. Fortuna, and initiates a rideshare trip using an Apple device.
+        \item During the trip, Driver A intentionally deviates from the assigned route.
+        \item The app triggers automatic rerouting through Google Maps.
+        \item The AI model activates and classifies the vehicle’s audio environment as “Lively”.
+        \item The system matches Driver A with Passenger A, whose mood preference is also Lively.
+        \item Driver A picks up Passenger A in Oakridge.
+        \item Passenger B, who prefers Chill, is not matched with the Lively driver, so the request stays unmatched. After waiting about two minutes, Passenger B is prompted to change their mood preference and chooses Lively (Section~\ref{sec:moodmatch}). Driver A can then see the request and picks up Passenger B in Sto. Niño Village.
+        \item The driver completes the trip, arriving at USC Talamban Campus with both passengers.
+    \end{enumerate}
+
+\subsection{Outbound Trip (Android – Driver B)}
+\vspace{1em}
+    \begin{enumerate}
+        \item Driver B starts at school, USC-TC, and initiates an outbound rideshare trip using an Android device.
+        \item The AI model activates and detects a “Chill” mood classification.
+        \item Driver B is matched with Passenger C, who prefers Chill, and proceeds to pick them up in the Bunzel lobby in USC-TC.
+        \item The system detects no match with Passenger D, who has no stated preference and whose destination is not aligned with Driver B’s route.
+        \item Passenger D is also picked up in the Bunzel lobby, to test ride inclusion logic.
+        \item Driver B completes the ride by dropping off Passenger C at Gaisano Country Mall and then Passenger D across Shell Banilad.
+    \end{enumerate}
+
+\indent This structured testing process ensured all key system components—registration flows, admin controls, routing and rerouting mechanisms, AI-based mood classification, and match compatibility—were executed in observable and verifiable conditions. The test also provided a qualitative basis for evaluating the app’s tolerance for imperfect match cases and real-world variability.
+
+

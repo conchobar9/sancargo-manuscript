@@ -1,0 +1,523 @@
+\chapter{Results and Discussion}
+
+This chapter reports the results gathered so far. The alpha testing results (unit and system testing) and the beta testing results are as of mid-November 2026. User acceptance testing (UAT) and the preliminary survey have not yet produced results, and their sections are marked for completion.
+
+\section{AI Mood Classifier Performance}
+\label{sec:ai-results}
+
+\subsection{Model Selection and Performance}
+\label{sec:ai-perf}
+
+Five training runs were made with different random seeds. Their validation accuracies were 83.52\%, 82.54\%, 85.47\%, 83.27\%, and 83.03\%, and they classified 3, 3, 3, 2, and 3 of the four sanity songs correctly. None of the five runs classified all four songs correctly, so the run with the highest validation accuracy, 85.47\%, was kept as the final classifier (version 4).
+
+The final classifier reached 85.47\% accuracy on the validation set and 89.13\% on the held-out test set. Training, validation, and test sets were split by source clip (Section~\ref{sec:ai}), so every test segment comes from a clip the model never saw in training. The training set holds 4,200 segments (1,400 per class, 375 of them augmented), and the validation and test sets hold 819 unmodified segments each (270 Chill, 270 Lively, and 279 Quiet). Averaging the model’s class probabilities over the three segments of each test clip, which mirrors the probability averaging used in the app (Section~\ref{sec:ai-runtime}), gave a clip-level accuracy of 88.64\% over 273 clips. The model was also checked on nine real-world songs with known expected labels, where it classified 7 of 9 correctly. This nine-song check was run after model selection and was not used to select the model. Table~\ref{tab:ai-results} summarizes these results, and Table~\ref{tab:ai-permood} gives the results for each mood.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Mood Classifier (Version 4) Results}\label{tab:ai-results}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|l|c|}
+        \hline
+        \textbf{Evaluation} & \textbf{Result} \\
+        \hline
+        Validation accuracy (best run) & 85.47\% \\
+        Held-out test accuracy (segments) & 89.13\% \\
+        Held-out test accuracy (clips, probabilities averaged) & 88.64\% \\
+        Training segments per class (after augmentation) & 1,400 \\
+        Split (train / validation / test segments) & 4,200 / 819 / 819 \\
+        Real-world songs classified correctly & 7 of 9 \\
+        Model size (TensorFlow Lite, without compression) & about 1 MB \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Test results for each mood (819 segments)}\label{tab:ai-permood}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{Mood} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Segments} \\
+        \hline
+        Chill & 0.85 & 0.83 & 0.84 & 270 \\
+        Lively & 0.83 & 0.87 & 0.85 & 270 \\
+        Quiet & 1.00 & 0.97 & 0.98 & 279 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Quiet was classified almost perfectly: no Chill or Lively segment was classified as Quiet, and 9 of the 279 Quiet segments were misclassified (6 as Chill and 3 as Lively). Most errors were between Chill and Lively: 46 of 270 Chill segments were classified as Lively, and 34 of 270 Lively segments as Chill (Figure~\ref{fig:confusion}), which is 80 of the 89 errors. This shows that Chill and Lively form a continuum and not two clearly separate groups, which is also one reason why more than three moods were not used (Section~\ref{sec:ai}).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{images/ai_confusion_matrix.png}
+    \caption{Confusion matrix of the mood classifier (version 4) on the held-out test set (819 segments, split by source clip)}
+    \label{fig:confusion}
+\end{figure}
+
+Of the nine real-world songs, the model classified all three Lively songs and all three Quiet songs correctly. It classified two of the three Chill songs as Lively, one with low confidence (51.5\%) and one with moderate confidence (75.5\%). Because nine songs is a small sample, this result is indicative only.
+
+\subsection{Measured Profile of the Moods}
+\label{sec:ai-profile}
+
+The feature audit measured the 1,821 clips used for training, validation, and testing (600 Lively, 601 Chill, and 620 Quiet) without involving the model. Table~\ref{tab:ai-profile} gives the median and the middle 50\% of each feature for each mood, and Figure~\ref{fig:ai-mel} shows what a typical segment of each mood looks like as an average mel spectrogram.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{images/ai_mel_spectrograms.png}
+    \caption{Mean mel spectrogram (dB) of 60 randomly sampled 10-second segments from each mood, drawn on one shared color scale. Brighter areas mean more energy at that frequency and time. Quiet is dark across the whole spectrum, whereas Chill and Lively both carry more energy and look alike, which agrees with the overlap between Chill and Lively in Table~\ref{tab:ai-profile}.}
+    \label{fig:ai-mel}
+\end{figure}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Measured profile of the moods (median, with the middle 50\% in parentheses)}\label{tab:ai-profile}
+    \footnotesize
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.22\textwidth}|>{\centering\arraybackslash}p{.22\textwidth}|>{\centering\arraybackslash}p{.22\textwidth}|>{\centering\arraybackslash}p{.22\textwidth}|}
+        \hline
+        \textbf{Feature} & \textbf{Quiet} & \textbf{Chill} & \textbf{Lively} \\
+        \hline
+        Loudness (dB) & $-31.3$ ($-41.8$ to $-23.4$) & $-17.8$ ($-20.8$ to $-14.7$) & $-15.2$ ($-18.0$ to $-12.9$) \\
+        Onsets per second & 3.6 (2.9 to 6.8) & 4.6 (3.7 to 5.4) & 4.8 (4.1 to 5.6) \\
+        Mean onset strength & 0.87 (0.87 to 1.04) & 1.29 (1.03 to 1.60) & 1.31 (1.15 to 1.54) \\
+        Spectral centroid (Hz) & 3,317 (1,573 to 3,815) & 1,546 (1,064 to 2,096) & 2,369 (1,951 to 2,700) \\
+        Spectral flatness & 0.073 (0.005 to 0.147) & 0.003 (0.001 to 0.012) & 0.016 (0.009 to 0.031) \\
+        Tempo (BPM) & not meaningful & 121 (107 to 133) & 120 (112 to 129) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Table~\ref{tab:ai-order} tests whether each feature orders the moods and how well it separates each pair.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Ordering and separation of the moods by each feature}\label{tab:ai-order}
+    \footnotesize
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.16\textwidth}|>{\centering\arraybackslash}p{.135\textwidth}|>{\centering\arraybackslash}p{.135\textwidth}|>{\centering\arraybackslash}p{.135\textwidth}|>{\centering\arraybackslash}p{.135\textwidth}|>{\centering\arraybackslash}p{.135\textwidth}|}
+        \hline
+        \textbf{Feature} & \textbf{Spearman $\rho$ with mood order} & \textbf{Cliff’s $\delta$, Quiet to Chill} & \textbf{Cliff’s $\delta$, Chill to Lively} & \textbf{Cliff’s $\delta$, Quiet to Lively} & \textbf{AUC, Chill vs Lively} \\
+        \hline
+        Loudness & 0.66 & 0.74 & 0.32 & 0.87 & 0.66 \\
+        Loudness variation & 0.04 & 0.27 & $-0.33$ & 0.10 & 0.66 \\
+        Onsets per second & 0.14 & 0.09 & 0.13 & 0.18 & 0.57 \\
+        Mean onset strength & 0.50 & 0.52 & 0.09 & 0.75 & 0.54 \\
+        Spectral centroid & $-0.14$ & $-0.48$ & 0.53 & $-0.30$ & 0.77 \\
+        Spectral flatness & $-0.16$ & $-0.53$ & 0.53 & $-0.32$ & 0.76 \\
+        Tempo & $-0.13$ & $-0.16$ & 0.02 & $-0.20$ & 0.51 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+A positive $\delta$ means the second class has the higher values. A $\delta$ of 0 means no difference and 1 means complete separation. An AUC of 0.5 means that the feature cannot tell Chill from Lively.
+
+\textbf{Loudness is the only feature that orders all three moods clearly.} Loudness rises from Quiet to Chill to Lively ($\rho = 0.66$). Quiet is far below the other two moods, but Chill and Lively differ only moderately ($\delta = 0.32$, AUC = 0.66), and the middle halves of their loudness overlap. Mean onset strength also rises with mood ($\rho = 0.50$), but mostly because it sets Quiet apart ($\delta = 0.09$ between Chill and Lively).
+
+\textbf{Tempo and onset rate do not separate Chill from Lively.} The median tempo is 121 BPM for Chill and 120 BPM for Lively ($\delta = 0.02$, $p = 0.50$), and the onset rates differ by only 0.2 onsets per second. The moods therefore cannot be defined by tempo or BPM, which agrees with the decision not to use tempo as an input (Section~\ref{sec:ai-features}).
+
+\textbf{Brightness separates Chill from Lively but does not order the three moods.} Lively is brighter and less tonal than Chill (centroid 2,369 Hz against 1,546 Hz, $\delta = 0.53$; flatness $\delta = 0.53$). Quiet is the brightest and flattest class, however, because its clips are noise-like, so these features do not form one scale from Quiet to Lively.
+
+\textbf{One energy dimension is not enough.} The first principal component of loudness, onset rate, onset strength, brightness, and flatness explains 42.6\% of the variance. Loudness, onset rate, and onset strength load positively on it, and brightness and flatness load negatively. It separates Quiet (median $-1.0$) from Chill (0.73) and Lively (0.55), but it does not place Lively above Chill (AUC = 0.44), because the loudness and brightness differences between Lively and Chill pull in opposite directions on it. Quiet is therefore the low end of the energy scale, while Chill and Lively differ by a combination of higher loudness and a brighter, denser spectrum. This is why a trained model is used instead of a single threshold (Section~\ref{sec:ai-compare}), and it is consistent with most test errors being between Chill and Lively (Section~\ref{sec:ai-perf}).
+
+Table~\ref{tab:ai-genre} shows the clips grouped by source genre or tag.
+
+{
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{.26\textwidth}|>{\raggedright\arraybackslash}p{.12\textwidth}|>{\centering\arraybackslash}p{.08\textwidth}|>{\centering\arraybackslash}p{.13\textwidth}|>{\centering\arraybackslash}p{.14\textwidth}|>{\centering\arraybackslash}p{.12\textwidth}|}
+\caption{Loudness, onset rate, and brightness by source genre or tag}\label{tab:ai-genre}\\
+\hline
+\textbf{Source} & \textbf{Mood assigned} & \textbf{Clips} & \textbf{Loudness (dB)} & \textbf{Onsets per second} & \textbf{Centroid (Hz)} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Source} & \textbf{Mood assigned} & \textbf{Clips} & \textbf{Loudness (dB)} & \textbf{Onsets per second} & \textbf{Centroid (Hz)} \\
+\hline
+\endhead
+\hline
+\endfoot
+Jamendo energy tags & Lively & 300 & $-13.3$ & 5.0 & 2,187 \\
+GTZAN metal & Lively & 100 & $-16.9$ & 4.9 & 2,683 \\
+GTZAN rock & Lively & 100 & $-17.6$ & 4.3 & 2,278 \\
+GTZAN disco & Lively & 100 & $-17.6$ & 5.1 & 2,545 \\
+GTZAN hip hop & Chill & 43 & $-14.1$ & 5.3 & 2,448 \\
+GTZAN pop & Chill & 43 & $-13.7$ & 4.7 & 3,132 \\
+GTZAN blues & Chill & 43 & $-17.2$ & 4.6 & 1,614 \\
+GTZAN reggae & Chill & 43 & $-18.6$ & 4.5 & 2,022 \\
+GTZAN country & Chill & 43 & $-18.7$ & 4.2 & 1,861 \\
+GTZAN jazz & Chill & 43 & $-21.3$ & 4.6 & 1,618 \\
+GTZAN classical & Chill & 43 & $-28.4$ & 4.3 & 1,358 \\
+Jamendo calm tags & Chill & 300 & $-17.6$ & 4.5 & 1,162 \\
+ESC-50 recordings & Quiet & 320 & $-23.8$ & 5.0 & 2,627 \\
+Synthetic noise & Quiet & 300 & $-39.3$ & 2.9 to 8.6 & 3,594 \\
+\end{longtable}
+}
+
+The loudness gap between Chill and Lively comes mostly from the Jamendo clips. Jamendo Lively is 4.3 dB louder than Jamendo Chill (AUC = 0.77), whereas the GTZAN genres assigned to Lively are no louder than several assigned to Chill (AUC = 0.56). The GTZAN hip hop and pop clips labeled Chill are louder than every GTZAN genre labeled Lively. These 86 clips are 14\% of the Chill class, and leaving them out raises the Chill-versus-Lively AUC from 0.66 to 0.70 for loudness and from 0.77 to 0.84 for brightness. The assignment of genres to moods is therefore one source of the overlap between Chill and Lively. It was kept for the reported results, and its effect is discussed in Section~\ref{sec:ai-limits}.
+
+The Quiet class has two parts. The synthetic noise has a median of $-39.3$ dB, and the ESC-50 recordings have a median of $-23.8$ dB, which is louder than the GTZAN classical clips labeled Chill ($-28.4$ dB). Quiet is therefore not defined by level alone, and the classifier separates it from the other moods by more than loudness.
+
+\subsection{Effect of the Training Data}
+\label{sec:ai-data}
+
+The first versions of the model were trained mostly on GTZAN. Version 3 failed on the Lively class for modern pop, trap, and EDM tracks, because GTZAN was compiled in 2002 and does not represent what drivers play today. Adding mood-tagged contemporary tracks from MTG-Jamendo addressed this in version 4. On the nine real-world songs, version 3 classified none of the three Lively songs correctly (all three were called Chill) and scored 6 of 9, while version 4 classified all three Lively songs correctly and scored 7 of 9. The gain had a cost: two of the three Chill songs, one of them a spoken-word podcast clip, are now classified as Lively. The remaining weakness is the boundary between Chill and Lively, which accounts for most test errors and for both real-world misses. The lesson is that the training data must match the music the model will hear in use, not only the genre labels.
+
+An earlier version of the model was evaluated on a split of segments, which let segments of the same clip appear in both the training and the test sets. Because this overstated what the model could do on new music, those results are not reported. All figures in this chapter come from the split by source clip.
+
+\subsection{Comparison with Alternatives}
+\label{sec:ai-compare}
+
+Four comparisons were made, as described in Section~\ref{sec:ai-eval}. All use the same clip-level split and the same test clips as the final model, and the models that were trained use three random seeds. For each comparison, the result is stated whether or not it favors the chosen design.
+
+\textbf{Simple models against the CNN.} Table~\ref{tab:ai-simple} gives the results. No single-feature rule exceeded 60.6\% test accuracy (loudness), and the tempo rule reached 45.8\%, not far above the 33\% expected from guessing among three moods. The seven hand-made features together reached 74.4\% with a decision tree and 75.0\% with logistic regression. Adding the mean and standard deviation of the 40 MFCC raised logistic regression to 85.96\% and the random forest to 85.47\%. The CNN trained in the same way, without augmentation, reached 87.18\%, and the deployed CNN reached 89.13\%. The models that use MFCC summaries therefore came within about 1 to 4 points of the CNN. This is inside the sampling uncertainty of the 273 test clips (Section~\ref{sec:ai-limits}), so the test does not show that the CNN is clearly more accurate than these models, although it shows that simple rules are clearly worse. The CNN was kept because it needs only the MFCC, RMS, and onset strength rows, which the app already computes and which were checked against Librosa (Section~\ref{sec:ai-align}), whereas the other models also need spectral centroid, spectral flatness, and tempo. This is a design reason and was not measured.
+
+{
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{.52\textwidth}|>{\centering\arraybackslash}p{.11\textwidth}|>{\centering\arraybackslash}p{.11\textwidth}|>{\centering\arraybackslash}p{.11\textwidth}|}
+\caption{Simple models and the CNN on the same test clips}\label{tab:ai-simple}\\
+\hline
+\textbf{Model} & \textbf{Validation accuracy} & \textbf{Test accuracy} & \textbf{Test macro F1} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Model} & \textbf{Validation accuracy} & \textbf{Test accuracy} & \textbf{Test macro F1} \\
+\hline
+\endhead
+\hline
+\endfoot
+Deployed CNN (with augmentation) & 0.8547 & 0.8913 & 0.8910 \\
+CNN, 42 rows, no augmentation (mean of 3 seeds) & not reported & 0.8718 & 0.8707 \\
+Logistic regression, 7 features + MFCC mean and standard deviation & 0.7900 & 0.8596 & 0.8568 \\
+Random forest, 7 features + MFCC mean and standard deviation & 0.8498 & 0.8547 & 0.8535 \\
+Logistic regression, 7 features & 0.7033 & 0.7497 & 0.7493 \\
+Decision tree (depth 3), 7 features & 0.6911 & 0.7436 & 0.7432 \\
+Rule: loudness only & 0.5922 & 0.6056 & 0.5927 \\
+Rule: onset strength only & 0.5470 & 0.5592 & 0.4624 \\
+Rule: spectral flatness only & 0.4689 & 0.4982 & 0.4069 \\
+Rule: spectral centroid only & 0.4652 & 0.4933 & 0.4017 \\
+Rule: tempo only & 0.4225 & 0.4579 & 0.3693 \\
+Rule: loudness variation only & 0.4286 & 0.4335 & 0.3484 \\
+Rule: onset rate only & 0.4225 & 0.4249 & 0.3912 \\
+\end{longtable}
+}
+
+\textbf{Feature test.} Table~\ref{tab:ai-featuretest} gives the CNN trained with each feature alone and in pairs. MFCC alone reached 85.6\%, and adding RMS raised it to 87.2\%. Adding onset strength to MFCC and RMS changed nothing (87.2\% with and without it), so onset strength did not add measurable accuracy in this test. It was kept because it costs one row and was chosen on the music-emotion literature~\cite{panda2023audio}, and MFCC with RMS would have given the same accuracy. RMS alone (77.9\%) and onset strength alone (81.9\%) were weaker, but each was far better than the best single-feature rule (60.6\%), which shows that the change of a feature over time carries information that a threshold on its average does not. Tempo was not tested as an input to the CNN. The tempo rule in Table~\ref{tab:ai-simple} supports leaving it out.
+
+\begin{table}[htbp]
+    \centering
+    \caption{CNN accuracy with each feature alone and in pairs (3 seeds)}\label{tab:ai-featuretest}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.34\textwidth}|>{\centering\arraybackslash}p{.08\textwidth}|>{\centering\arraybackslash}p{.24\textwidth}|>{\centering\arraybackslash}p{.12\textwidth}|}
+        \hline
+        \textbf{Features} & \textbf{Rows} & \textbf{Test accuracy, mean $\pm$ SD} & \textbf{Macro F1} \\
+        \hline
+        MFCC + RMS & 41 & 0.8722 $\pm 0.0066$ & 0.8708 \\
+        MFCC + RMS + onset strength (all) & 42 & 0.8718 $\pm 0.0026$ & 0.8707 \\
+        MFCC + onset strength & 41 & 0.8661 $\pm 0.0095$ & 0.8644 \\
+        MFCC only & 40 & 0.8559 $\pm 0.0036$ & 0.8541 \\
+        RMS + onset strength & 2 & 0.8295 $\pm 0.0065$ & 0.8261 \\
+        Onset strength only & 1 & 0.8193 $\pm 0.0020$ & 0.8175 \\
+        RMS only & 1 & 0.7794 $\pm 0.0100$ & 0.7733 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Window length.} Table~\ref{tab:ai-window} gives the accuracy for windows of 2.5, 3.3, 5, and 10 seconds, with the readings of the shorter windows averaged back to 10 seconds. The accuracy of all four windows lies within 1.4 points, and the variation between seeds is about 1 point, so the test does not show that the 10-second window is more accurate. The 10-second window scored lowest, though not clearly. The shorter-window models were also trained on 2 to 4 times as many slices, which may account for part of their small advantage. The accuracy is therefore not sensitive to the window length between 2.5 and 10 seconds. The 10-second window rests on the design reasons in Section~\ref{sec:ai-runtime}, and a shorter window that gives the first tag earlier was not tested in the app.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Accuracy by window length (3 seeds)}\label{tab:ai-window}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.12\textwidth}|>{\centering\arraybackslash}p{.33\textwidth}|>{\centering\arraybackslash}p{.30\textwidth}|}
+        \hline
+        \textbf{Window} & \textbf{Accuracy per 10-second decision, mean $\pm$ SD} & \textbf{Accuracy per 30-second clip} \\
+        \hline
+        10 s & 0.864 $\pm 0.013$ & 0.868 \\
+        5 s & 0.874 $\pm 0.011$ & 0.894 \\
+        3.3 s & 0.868 $\pm 0.009$ & 0.876 \\
+        2.5 s & 0.878 $\pm 0.012$ & 0.890 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Interval and window.} Table~\ref{tab:ai-interval} and Figure~\ref{fig:ai-interval} give the simulation of the tag for reading intervals of 10 to 60 seconds and averaging windows of 1 to 10 readings. Without averaging, the tag was correct about 89\% of the time and changed 33 times an hour at a 20-second interval. Averaging five readings raised the steady accuracy to 98.7\% and cut the changes to 2.4 an hour, with a mean delay of 52 seconds. This agrees with the delay of about 60 seconds seen on the emulator (Section~\ref{sec:ai-ondevice}). A window of three readings was faster (34 seconds) but changed the tag about every 8 minutes, and a window of seven was slightly more stable but 20 seconds slower. A 10-second interval gave about the same accuracy and a delay of 31 seconds, but kept the microphone on all the time, whereas 30 and 60 seconds used the microphone less (33\% and 17\% of the time) but slowed the update to 73 and 135 seconds. The setting of 20 seconds and five readings is therefore a balance between delay, stability, and microphone use, not the best setting on any single measure, and a 30-second interval with five readings would also be defensible.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{images/ai_interval_heatmaps.png}
+    \caption{Simulated behavior of the mood tag for reading intervals of 10, 20, 30, and 60 seconds and averaging windows of 1, 3, 5, 7, and 10 readings: steady-state accuracy of the tag (left), mean time to show a new mood in seconds (middle), and tag changes per hour while the mood is steady (right). The red box marks the setting used in the app (20 seconds, five readings).}
+    \label{fig:ai-interval}
+\end{figure}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Simulated tag for selected intervals and windows (the current setting is in bold)}\label{tab:ai-interval}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\centering\arraybackslash}p{.13\textwidth}|>{\centering\arraybackslash}p{.13\textwidth}|>{\centering\arraybackslash}p{.13\textwidth}|>{\centering\arraybackslash}p{.13\textwidth}|>{\centering\arraybackslash}p{.13\textwidth}|>{\centering\arraybackslash}p{.13\textwidth}|}
+        \hline
+        \textbf{Interval (s)} & \textbf{Readings averaged} & \textbf{Steady accuracy} & \textbf{Tag changes per hour} & \textbf{Mean delay (s)} & \textbf{Microphone on} \\
+        \hline
+        20 & 1 & 0.892 & 33.3 & 25 & 50\% \\
+        20 & 3 & 0.963 & 7.2 & 34 & 50\% \\
+        \textbf{20} & \textbf{5} & \textbf{0.987} & \textbf{2.4} & \textbf{52} & \textbf{50\%} \\
+        20 & 7 & 0.995 & 1.0 & 72 & 50\% \\
+        20 & 10 & 0.998 & 0.15 & 101 & 50\% \\
+        10 & 5 & 0.985 & 5.4 & 31 & 100\% \\
+        30 & 5 & 0.985 & 1.8 & 73 & 33\% \\
+        60 & 5 & 0.987 & 0.8 & 135 & 17\% \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Simplifications.} The simple models and the feature test were trained without augmentation and with each feature row standardized, so their CNN is not identical to the deployed model, whose results are the reference. The window test trained on slices of the 10-second matrix, which equals a shorter window apart from small edge effects. The interval simulation draws each reading independently from the final model’s test predictions, but real consecutive readings from the same song are correlated, so a wrong reading is likely to repeat. The steady accuracy of 98.7\% is therefore an upper bound and not an expected accuracy, and averaging helps less in a car than in this simulation. The accuracy in a real setting is better shown by the nine-song test (Section~\ref{sec:ai-perf}).
+
+\subsection{On-Device Detection}
+\label{sec:ai-ondevice}
+
+In system testing, the number of correct mood detections out of nine clips (three Lively, three Chill, three Quiet) was 8 on the emulator with the final model, counting the tag the app displayed after about one minute with detection started fresh for each clip. The first single classification was correct for 7 of the 9 clips. It was wrong for song 3, where the first sample was a near-tie (Quiet 0.57, Lively 0.43) that the averaging corrected by the second sample, and for song 5. The one clip the app got wrong was the podcast clip (song 5), which was classified Quiet with 97\% to 100\% confidence in every sample. The model was not trained on speech, and the Chill class contains music only. On the three physical devices, tested with the final model, the app detected 7 of 9 clips correctly on every device (Table~\ref{tab:measure}). The two clips missed on the physical devices were the podcast clip (song 5) and “Indecisions” by Rex Orange County and Daniel Caesar. The emulator classified “Indecisions” correctly, so this song accounts for the one-clip difference between the emulator (8 of 9) and the devices (7 of 9). On the devices, both missed clips were classified as Lively. The cause was not tested. A likely reason is that the microphones and speakers of the real phones pick up the music differently from the emulator’s audio path, and a single song is too small a sample to confirm it.
+
+The displayed tag followed a change of sound in about one minute. On the emulator, a switch from Quiet to Chill took about 60 seconds to show, although the raw classification was correct from the first sample. This delay is the cost of averaging over five classifications taken 20 seconds apart (Section~\ref{sec:ai-runtime}). The simulation in Section~\ref{sec:ai-compare} gave a mean delay of 52 seconds for this setting, which agrees with this observation.
+
+\subsection{Limitations of the Classifier Results}
+\label{sec:ai-limits}
+
+The classifier results should be read with the following limitations in mind.
+
+\begin{itemize}
+    \item No external experts were consulted. The definitions of the moods and the technical choices rest on the cited studies and on the proponents’ own measurements.
+    \item The passenger needs behind the three moods are assumptions, because no survey of music preferences was conducted. Whether mood matching improves rides was not measured.
+    \item The split is by source clip, not by artist or album, so tracks from the same artist can appear in both the training and test sets.
+    \item The validation and test sets each hold 273 clips, so the reported accuracies carry roughly $\pm 4$ points of sampling uncertainty.
+    \item Most test errors (80 of 89) are between Chill and Lively, and the two real-world misses were a podcast clip (classified Quiet on the emulator) and the song “Indecisions”. The two classes come from genre and mood tags, which are partly subjective, and the assignment of GTZAN genres to moods is a simplification. The feature audit (Section~\ref{sec:ai-profile}) shows that the GTZAN hip hop and pop clips labeled Chill, 86 of the 601 Chill clips, are as loud as or louder than the GTZAN genres labeled Lively. The labels were kept for the reported results, and relabeling them and retraining the model is recommended as future work. A passenger who expects hip hop to be Lively may therefore be matched with a driver tagged Chill.
+    \item The Quiet class is trained on synthetic noise and looped ESC-50 recordings, not recordings from real vehicle cabins. The car-cabin recording in the selection check was misclassified in four of five runs, and the 97\% Quiet test recall comes from the same kinds of audio as training. Music mixed with conversation, engine noise, and road noise, and different phone positions, were not tested beyond the nine clips.
+    \item The nine real-world songs are too few to separate 7 of 9 from 8 of 9, so that result is indicative only.
+    \item Training is unstable: two of the five runs peaked at epoch 2 or 3 and then declined, which points to overfitting on the limited number of independent clips.
+    \item Mood is a fail-open filter. A wrong but known tag can block a passenger who chose a specific mood from seeing that driver.
+    \item The matcher does not check how old the moodTag is, although the tag has an update timestamp.
+    \item The Dart versus Librosa comparison covers one clip and the feature math only. It does not cover microphone capture or resampling.
+    \item Battery use and processor load of recording 10 seconds every 20 seconds were not measured. The window test (Section~\ref{sec:ai-compare}) found similar accuracy for windows of 2.5 to 10 seconds, but a shorter window was not tested in the app, so its effect on the first tag time, on the microphone time, and on battery use is unknown.
+    \item The Chill class contains no spoken-word audio, although drivers may play podcasts or talk radio. The proponents focused on music, and the use of podcasts and radio was recognized only later in the development of the app. Adding spoken-word audio to the training is recommended for future work (Section~\ref{sec:recs}). One of the nine real-world clips (song 5, a podcast) was among the final model’s two real-world misses.
+    \item The displayed tag lags the music after a change. It averages the last five classifications taken 20 seconds apart, so on the emulator a switch from Quiet to Chill took about 60 seconds to show, although the raw classification was correct from the first sample.
+    \item Smoothing does not fully stabilize noise near the Chill and Quiet boundary. On the emulator the displayed tag for the aircon-noise clip (song 4) briefly changed to Chill before returning to Quiet.
+\end{itemize}
+
+\subsection{Unit Testing of the Mood AI}
+\label{sec:ai-unit}
+
+The mood AI was tested at six levels, from the feature code up to the app on the devices. Table~\ref{tab:ai-levels} gives the unit tested, the evidence, and the result for each level, and Figures~\ref{fig:confusion}, \ref{fig:ai-prf}, \ref{fig:ai-runs}, \ref{fig:ai-clips}, and~\ref{fig:ai-dart} show the results.
+
+{
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{.14\textwidth}|>{\raggedright\arraybackslash}p{.18\textwidth}|>{\raggedright\arraybackslash}p{.23\textwidth}|>{\raggedright\arraybackslash}p{.32\textwidth}|}
+\caption{Levels of testing of the mood AI}\label{tab:ai-levels}\\
+\hline
+\textbf{Level} & \textbf{Unit tested} & \textbf{Test} & \textbf{Result} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Level} & \textbf{Unit tested} & \textbf{Test} & \textbf{Result} \\
+\hline
+\endhead
+\endfoot
+1. Features & The Dart feature extractor (42 rows) & Compared with the Librosa reference on the same 10-second clip & Maximum absolute difference $3.0\times 10^{-7}$ for MFCC, $2.5\times 10^{-8}$ for RMS, and $9.9\times 10^{-9}$ for onset strength; Pearson $r$ = 1.0000 for every row (Figure~\ref{fig:ai-dart}) \\
+\hline
+2. Model selection & Five seeded training runs & Validation accuracy and a four-song check & 82.54\% to 85.47\%; run 3 (85.47\%) was kept (Figure~\ref{fig:ai-runs}) \\
+\hline
+3. Held-out test & The selected model & 819 test segments from 273 clips not used in training & 89.13\% (730 of 819) by segment and 88.64\% by clip (Figures~\ref{fig:confusion} and~\ref{fig:ai-prf}) \\
+\hline
+4. Timing & The smoothing and update interval & Simulation on the model’s test predictions (Section~\ref{sec:ai-compare}) & Mean delay of 52 s and 2.4 tag changes an hour \\
+\hline
+5. Real-world songs & The model and the app & Nine songs with known expected moods & 7 of 9 on Colab, 8 of 9 on the emulator, and 7 of 9 on each phone (Figure~\ref{fig:ai-clips}) \\
+\hline
+6. App tests & The Flutter test suite & flutter test & 336 passed and 1 skipped (the Dart versus Librosa test skips itself without a reference file).\\
+\hline
+\end{longtable}
+}
+
+\textbf{App tests.} Of the 336 tests that passed, 38 are in six test files for the mood code on the device and the ride-matching model: the audio source (3), the feature extractor check (1), the preference selector (6), the preference set (11), the smoother (5), and the ride match model (12). The matchRide conditions of Table~\ref{tab:ai-accept} run in the Cloud Functions code, which is covered by the Cloud Functions test suite and nine verification scripts (Section~\ref{sec:phases}). The matchRide verification script has 18 checks, and five of them cover the mood filter: a passenger who accepts only Chill is refused a Lively driver, a passenger who accepts Chill and Quiet is matched with a Quiet driver and refused a Lively driver, a driver whose tag is unknown is accepted (fail open), and a passenger with no preference accepts any driver. In the system test cases (Section~\ref{sec:system-results} and Appendix~\ref{app:systemcases}), S-C5 covers the filter in the whole app: a passenger who accepts only Quiet is tested with a Lively driver, a Quiet driver, and a driver with no mood tag, and S-F3 checks that audio is sampled only while the driver is available and that only the mood label is stored. 
+
+\CONFIRM{Table~\ref{tab:ai-levels} says 336 Flutter tests passed with 38 in six mood and matching files. Section~\ref{sec:unit-results} and the results slides say 332 passed, with 33 in the mood detection area. Please confirm which counts are final.}
+
+The confusion matrix in Figure~\ref{fig:confusion} shows where the model is right and wrong. Most of its 89 errors are between Chill and Lively (46 Chill segments called Lively and 34 Lively segments called Chill). Quiet is almost never confused with them: no Chill or Lively segment was called Quiet, and only 9 of 279 Quiet segments were called Chill or Lively. Figure~\ref{fig:ai-prf} shows the same by class. Quiet has a precision of 1.00 and a recall of 0.97, whereas Chill and Lively score between 0.83 and 0.87 on precision and recall. The five runs in Figure~\ref{fig:ai-runs} differ by about 3 points, which is why the run was chosen by validation accuracy and a separate four-song check and not by the test set. In Figure~\ref{fig:ai-clips}, the version 3 model scored 6 of 9 and the final model 7 of 9, and the devices scored one song lower than the emulator, as explained in Section~\ref{sec:ai-ondevice}. Nine songs are too few to separate 7 of 9 from 8 of 9.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/ai_prf.png}
+    \caption{Precision, recall, and F1 score of each mood on the held-out test set.}
+    \label{fig:ai-prf}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/ai_val_runs.png}
+    \caption{Validation accuracy of the five training runs. Run 3 (85.47\%) was kept.}
+    \label{fig:ai-runs}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/ai_nine_clips.png}
+    \caption{Correct mood detections out of the nine real-world clips for the version 3 model, the final model in the notebook, the emulator, and the three physical devices.}
+    \label{fig:ai-clips}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/ai_dart_librosa.png}
+    \caption{Agreement between the Dart and the Librosa feature extraction on the same 10-second segment, for the 42 feature rows.}
+    \label{fig:ai-dart}
+\end{figure}
+
+\section{Alpha Testing: Unit Testing}
+\label{sec:unit-results}
+Unit testing was run with \texttt{flutter test} and the Cloud Functions test suite. All 332 Flutter tests passed (1 test was skipped), which is a 100\% pass rate with no failures. All 9 of the Cloud Functions and security rules checks passed. Table~\ref{tab:unit} shows the Flutter tests by area.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Flutter Unit Tests by Area}
+    \label{tab:unit}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Area} & \textbf{Total cases} & \textbf{Result} \\
+        \hline
+        Accounts and registration & 44 & Pass \\
+        Ride flow and matching & 92 & Pass \\
+        Tokens, fuel, and CES period & 45 & Pass \\
+        Admin, reports, and ratings & 59 & Pass \\
+        Mood detection & 33 & Pass \\
+        Shared UI and safety & 38 & Pass \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\TODO{The case counts in Table~\ref{tab:unit} add up to 311, but 332 tests passed. Please reconcile (for example, a row that was cut off in the results slides, or tests outside these six areas).}
+
+\section{Alpha Testing: System Testing}
+\label{sec:system-results}
+System testing ran 32 cases. On the emulators, all 32 passed on the first run, with none failed or blocked (a 100\% first-run pass rate). On the three physical devices (a Samsung Galaxy A06 5G, an iPhone 17, and an iPhone 15 Pro Max), each case was run in five rounds and passed only when all five rounds succeeded. All 32 cases passed on the Android phone. The iPhones could not receive push notifications, because the proponents used free Apple IDs (Section~\ref{sec:scope}), so the four notification cases (S-E1 to S-E4) could not be tested on them and are marked N/A. The other 28 cases passed on both iPhones, with none failed or blocked. Three cases (S-B5, S-B7, and S-D2) were run for one round only. Table~\ref{tab:system} shows the results by area.
+
+\begin{table}[htbp]
+    \centering
+    \caption{System Testing Results by Area}
+    \label{tab:system}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|l|c|>{\centering\arraybackslash}p{1.6cm}|>{\centering\arraybackslash}p{1.6cm}|>{\centering\arraybackslash}p{1.6cm}|>{\centering\arraybackslash}p{1.6cm}|}
+        \hline
+        \textbf{Area} & \textbf{Cases} & \textbf{Emulator passed} & \textbf{Android passed} & \textbf{iOS 1 passed} & \textbf{iOS 2 passed} \\
+        \hline
+        B1 Accounts and admin & 6 & 6 & 6 & 6 & 6 \\
+        B2 Ride flow & 8 & 8 & 8 & 8 & 8 \\
+        B3 Matching filters & 6 & 6 & 6 & 6 & 6 \\
+        B4 Tokens and fuel & 4 & 4 & 4 & 4 & 4 \\
+        B5 Notifications and chat & 4 & 4 & 4 & N/A & N/A \\
+        B6 Safety and privacy & 4 & 4 & 4 & 4 & 4 \\
+        \hline
+        \textbf{Total} & \textbf{32} & \textbf{32} & \textbf{32} & \textbf{28 run} & \textbf{28 run} \\
+        \hline
+    \end{tabular}
+    \par\smallskip{\footnotesize N/A: not tested, because iOS devices could not receive push notifications (free Apple IDs). Chat itself works on iOS inside the application, but a message is not announced when the application is closed or in the background. iOS 1: iPhone 17. iOS 2: iPhone 15 Pro Max.}
+\end{table}
+
+Table~\ref{tab:measure} gives the measurements recorded during system testing. Requests reached the driver in about 1.6 to 1.8 seconds and the passenger's screen updated about 1.2 to 1.6 seconds after the driver accepted. The physical devices were faster than the emulator in every timing measurement. No crashes or freezes were recorded on any device.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Measurements Recorded During System Testing}
+    \label{tab:measure}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.34\textwidth}|c|c|c|c|}
+        \hline
+        \textbf{Measurement} & \textbf{Emulator} & \textbf{Android} & \textbf{iOS 1} & \textbf{iOS 2} \\
+        \hline
+        Request to driver prompt (median of 5 runs) & 1.8 s & 1.7 s & 1.7 s & 1.6 s \\
+        Accept to passenger update (median of 5 runs) & 1.6 s & 1.4 s & 1.2 s & 1.3 s \\
+        Cold start to home screen (median of 3 runs) & 2.7 s & 0.9 s & 1.0 s & 0.9 s \\
+        Crashes and freezes & 0 & 0 & 0 & 0 \\
+        Mood detection correct (out of 9 clips) & 8 & 7 & 7 & 7 \\
+        App size (phone storage) & -- & 285 MB & 90.6 MB & 91.3 MB \\
+        \hline
+    \end{tabular}
+    \par\smallskip{\footnotesize Emulator: Google Pixel 8 Pro. Android: Samsung Galaxy A06 5G. iOS 1: iPhone 17. iOS 2: iPhone 15 Pro Max. App size was read from each phone's storage settings.}
+\end{table}
+
+\CONFIRM{Explain the 285 MB app size on the Android phone, which is about three times the iOS figures (for example, a debug build or cached data), and state which build was installed.}
+
+\subsection{Limits Found}
+The main limit found in alpha testing was the difficulty of performing matched rides with physical devices. Matching needs a driver and a passenger device in the right places at the same time. Three cases that need such rides (S-B5, S-B7, and S-D2) were run for one round only, against five rounds for the other cases. \CONFIRM{State why these three cases were run for one round only.}
+
+\section{Beta Testing}
+\label{sec:beta-results}
+Twelve volunteers were recruited and all twelve finished the feedback survey. Each tester used one physical device with SanCarGo installed, taken from the ten devices in Table~\ref{tab:betadevices}, and two Android emulators, one playing the passenger and one the driver. The physical device was used for the tasks that did not involve inbound or outbound trips, and the emulators were used for the trips. The iPhones could not show push notifications (Section~\ref{sec:scope}), so the testers tried the notification and chat tasks on the emulators, which can receive them. Only four iPhones were available, so the iOS testers shared devices. Testers did not register their own accounts: the proponents gave each of them a pre-made dummy login in the USC email domain (usc.edu.ph). The average session lasted 40 minutes, against the 45 minutes planned. Eleven of the twelve testers (91.7\%) never use ridesharing applications, and one (8.3\%) sometimes does, so most ratings come from people new to this kind of application.
+
+\subsection{Task Results}
+Overall, 97.2\% of the task results were Pass, above the 80\% target of Table~\ref{tab:betapass}. All of the required tasks (T1 to T3 and W1 to W11) were reported as Pass by every tester. Of the optional tasks (O1 to O3), 91.7\% were reported as Pass and 8.3\% as Could not try (three task results in total). No crashes were reported, so the condition of no crash on the core tasks was met.
+
+\subsection{Experience Ratings}
+Testers rated seven statements about their experience from 1 (strongly disagree) to 5 (strongly agree). Table~\ref{tab:beta-ratings} gives the averages. All were above 4. The highest was the understanding of why location and microphone access are requested (4.6), and the lowest was the readability of the screens and the map (4.1).
+
+\begin{table}[htbp]
+    \centering
+    \caption{Beta Testing Experience Ratings (Average of 12 Testers)}
+    \label{tab:beta-ratings}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|l|c|}
+        \hline
+        \textbf{Statement} & \textbf{Average (1 to 5)} \\
+        \hline
+        The app responded quickly & 4.3 \\
+        Notifications arrived when I expected them & 4.5 \\
+        The error messages told me what to do next & 4.4 \\
+        The screens and the map were easy to read & 4.1 \\
+        The emergency help button was easy to find & 4.5 \\
+        I understood why the app asked for location and microphone access & 4.6 \\
+        I felt my personal information was handled safely & 4.5 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Open Responses}
+All testers answered that the application did not crash, freeze, or lose their place, and all answered that they would use SanCarGo to get to or from campus, giving reasons such as saving money, smart transportation for students, free rides, less traffic, possible environmental benefits, and a new way of meeting people. The parts testers liked most were the interface, the rating feature, accurate location tracking, the role tutorials, the dynamic mood, the geofence, the responsive notifications, and the chat. The most confusing parts were what to expect from the mood feature, some interface text, delayed notifications, the lack of route options on outbound trips, mood buttons that glitched, and delayed screens after completing a ride. Testers suggested more pick-up and drop-off points, better mood classification, a dark mode, live sharing, a calling feature, and different route options for outbound trips.
+
+\subsection{Limits Found}
+Two limits were found in beta testing: visual interface issues on Android devices, and differing opinions on mood classification, which appeared both among the most confusing parts and among the suggested improvements. In addition, the rides were played on emulators with simulated GPS, so the results say nothing about how real GPS drifts on a moving vehicle, battery use and heat, or whether live tracking survives a phone in a pocket. Twelve testers is a small group, and most had not used a ridesharing application before.
+
+\TODO{Add the System Usability Scale average (target 68 or higher), the result of the team checks, and the severity of the problems reported by testers, which are not in the results received so far.}
+
+
+\section{User Acceptance Testing}
+\TODO{UAT results are not available yet: number of participants (up to 60), number of rides matched, completion and failure rates, and the feedback survey ratings.}
+
+\section{Preliminary Survey}
+\TODO{Preliminary survey results (target at least 191 responses): number of responses, residential locations and landmarks, phone operating systems and carriers, number of students interested in UAT, and driver-to-passenger ratio.}
+
+\section{Discussion}
+The alpha testing results show that the core logic of the application works as designed. The automated checks of ride matching and the Ride Token system (Objectives 2 and 3) all passed, and the whole-system cases (Objective 1) all passed on the emulators and on the Android phone, and on the two iPhones all the cases that could be run passed (the four notification cases could not be tested on iOS), with the matching, token, notification, and safety flows behaving as specified on the devices that could receive notifications. The response times of about one to two seconds for requests and acceptances are short enough for a ride-matching interaction.
+
+Read against the test levels of ISO/IEC/IEEE 29119 used as the reference framework in Section~\ref{sec:phases}, the evidence is uneven. The unit level is complete: all automated checks passed. The system level is complete on the emulators and on the Android phone, and complete on the two iPhones except for the four notification cases, with each case recorded as a step, an expected result, and an actual result per device, as the standard's documentation practice suggests. Beta testing has produced results from 12 outside volunteers, but the acceptance level, which is the one that tests the application with its intended users, has no results yet. The mood classifier was evaluated on a held-out test set and on real-world songs, which is the kind of evidence the standard's guidance on AI-based systems (Part 11) points to for a component that cannot be verified by fixed expected outputs alone~\cite{iso29119site}. The testing was not assessed for conformance with the standard, so these statements describe how the evidence is organized and do not claim certification.
+
+The beta results are positive. All required tasks passed for every tester, 97.2\% of all task results were Pass, no crashes were reported, and the experience ratings were all above 4 out of 5, which suggests that testers who had mostly never used a ridesharing application could complete the main ride flow. The main weakness they pointed to was the mood feature: its classification, what to expect from it, and its buttons were mentioned among both the most confusing parts and the improvements wanted, which agrees with the classifier results of Section~\ref{sec:ai-results}, where the Chill and Lively boundary is the weakest point. On physical devices the classifier detected 7 of 9 clips, one fewer than on the emulator.
+
+The results also show what is not yet proven. Three system cases were run for one round only. The beta rides were played on emulators with simulated GPS, and the group was small, so the results do not show how the application behaves with real GPS on a moving vehicle. Finally, Objective 4, the evaluation with Computer Engineering students, depends on UAT, which has not yet been done. \TODO{Rewrite this discussion after the UAT and survey results are in, and relate the findings to the related literature in Chapter 2.}

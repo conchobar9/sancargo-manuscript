@@ -1,0 +1,71 @@
+% Appendix: Beta Testing Task List
+\chapter{Beta Testing Task List}
+\label{app:beta}
+\clearpage
+
+Testers do the required tasks in order. For each one, they check that they see what the last column says, then record Pass, Fail, or Could not try in the survey. Tasks W1 to W11 are one ride, played across both emulators. Tasks O1 to O3 are optional.
+
+\section*{Everyone (required)}
+\small
+\begin{longtable}{|p{1.0cm}|p{7.6cm}|p{6.0cm}|}
+\hline
+\textbf{ID} & \textbf{What to do} & \textbf{You should see} \\
+\hline
+\endhead
+T1 & Sign up and Sign in on the physical device, passenger emulator, and the driver emulator with the account details the team gave you. & Each emulator reaches its home screen. A wrong password shows ``Incorrect email or password.'' \\
+\hline
+T2 & On each emulator, open Profile \& Rewards. & Your name and rating. The driver also sees Ride Token totals; the passenger does not. \\
+\hline
+T3 & Log out of one emulator, then log in again. & Login screen after logging out, and login works again. \\
+\hline
+\end{longtable}
+\normalsize
+
+\section*{One ride, in order (required)}
+\small
+\begin{longtable}{|p{1.0cm}|p{1.8cm}|p{6.6cm}|p{5.2cm}|}
+\hline
+\textbf{ID} & \textbf{Role} & \textbf{What to do} & \textbf{You should see} \\
+\hline
+\endhead
+W1 & Passenger & Set the location to spot (a) from the cheat sheet. Open Request a Ride. & The Inbound screen (the spot is off campus). Approved pickup points show on the map. \\
+\hline
+W2 & Passenger & Pick the nearby pickup point, optionally choose a mood and vehicle preference, then request a ride. & ``Ride request submitted'' and a ``Looking for a driver'' card. \\
+\hline
+W3 & Driver & Set the location to spot (b). Switch on ``Available'' and allow the microphone when asked. Play a song near the emulator. & ``You are available for...'' and, after a few seconds, a mood chip (Lively, Chill or Quiet). \\
+\hline
+W4 & Driver & Wait for the passenger's request to show up, then accept it. & The request alert, then ``Request accepted. N seat(s) remaining.'' \\
+\hline
+W5 & Passenger & Look at your screen. & A notification ``Driver accepted your ride''. The driver's name, vehicle and plate show, and the driver appears on the map. \\
+\hline
+W6 & Driver & Start the trip, then confirm the pickup. & ``Trip started...'' then ``Passenger pickup confirmed.'' The passenger gets a ``You have been picked up'' notification. \\
+\hline
+W7 & Both & Send a chat message from the passenger, then reply from the driver. & Each message appears on the other emulator. \\
+\hline
+W8 & Driver & Set the location to spot (c), on campus, then complete the trip. & A ``Ride complete'' screen with the Ride Tokens earned. The passenger sees a ``You have arrived'' screen. \\
+\hline
+W9 & Passenger & Rate the driver with stars. & The rating saves. \\
+\hline
+W10 & Driver & Open Profile \& Rewards, then View token history. & The trip is listed as Pending. \\
+\hline
+W11 & Passenger & Start a new ride request if needed, tap the emergency help button, read the dialog, then press Cancel. & A ``Request administrator help?'' dialog. Cancel sends nothing. \\
+\hline
+\end{longtable}
+\normalsize
+
+\section*{New ride (optional)}
+\small
+\begin{longtable}{|p{1.0cm}|p{1.8cm}|p{6.6cm}|p{5.2cm}|}
+\hline
+\textbf{ID} & \textbf{Role} & \textbf{What to do} & \textbf{You should see} \\
+\hline
+\endhead
+O1 & Passenger & Request a ride and cancel before anyone accepts, or wait 2 minutes and change your preferences. & The request disappears, or ``Preferences updated. Your place in line is kept.'' \\
+\hline
+O2 & Driver & Accept a request, then cancel that passenger before pickup, or start a trip and end it early with a reason. & A reason dialog; the passenger is told why. \\
+\hline
+O3 & Both & Try the outbound direction: put both emulators on campus near the Bunzel Lobby; the passenger picks a drop-off point; the driver types a destination or drops a pin. & The Outbound screens open. The driver sees a route and the drop-off points along it. \\
+\hline
+\end{longtable}
+\normalsize
+

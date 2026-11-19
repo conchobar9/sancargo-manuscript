@@ -1,0 +1,50 @@
+\chapter{Introduction}
+
+The environmental impact of motor vehicles is a growing concern at present. Globally, the transport sector is the largest contributor of greenhouse gas emissions \cite{whoHealthRisks}. These emissions not only exacerbate the issue of climate change, but also are responsible for air pollution. In the Philippines, the number of registered private cars, public utility vehicles, and motorcycles has surpassed 10 million vehicles in 2023 \cite{statistaPhilippinesNumber,statistaPhilippinesTotal,statistaPhilippinesNumber2}. Despite this large number, it cannot support the demand of everyday commuters. 
+
+As motor vehicles become more prevalent, transportation services have adopted digital platforms to satisfy the growing needs of commuters. The most popular service is ride-hailing, where users are connected to professional drivers through a mobile application. These mobile applications include Grab, Move It, Angkas, and Maxim, which are commonly used in the Philippines. Although they are known to be convenient and user-friendly, they have become more expensive. Prices for ride-hailing transactions have increased by 33\% from 2019 to 2022 \cite{bainEConomy2022}. Moreover, ride-hailing applications are not utilizing emerging technologies to evolve their platform. Most, if not all, applications used in the Philippines do not integrate new technologies such as artificial intelligence, Internet of Things, or other modern technologies into their application. This makes their platforms more mundane and too similar with other applications, only being different in aspects such as price or available services.
+
+Ridesharing involves a driver and one or more passengers who are connected through an online platform, where the driver can choose to share the cost of the ride or be compensated with money \cite{mitropoulos2021systematic}. This allows a driver to pick up passengers based on their end destination as long as it does not deviate from the driver's route. In Cebu, a study by Pepito et al.~\cite{pepito2022} demonstrated the feasibility of a carpooling ridesharing system within the University of San Carlos (USC) community. Their prototype, “Kapiot”, highlighted both the potential and the technical challenges of implementing such a system in an academic setting. With ridesharing, it has the potential for sustainable transportation by reducing the number of single-occupant vehicles on the road. Ridesharing with taxis showed that 98\% of 13,000 rides can be reduced to 3,000 rides with 4 passengers \cite{alonso2017demand}.
+
+With the lack of ridesharing platforms in the Philippines, there is a missed opportunity to provide sustainable transportation to commuters such as students. By incorporating an emerging technology such as artificial intelligence into a ridesharing platform, this could transform the user experience in unprecedented ways. This thesis project aims to explore a technological solution through a student-centric ridesharing mobile application with an AI-driven matching algorithm for the undergraduate students of USC in Cebu City, investigating its potential to improve student transportation challenges and reduce campus-related carbon emissions.
+
+
+\section{Goal and Objectives}
+The primary goal of this thesis project is to develop, deploy, and test a mobile ridesharing application specifically designed to meet the transportation needs of students of the University of San Carlos.
+
+To achieve this goal, the project has the following objectives:
+\begin{enumerate}
+    \item Design and develop a mobile application that allows student-users to perform a rideshare service.
+    \item Create a real-time ride-matching algorithm that integrates a mood-based AI matching system, pairing student-passengers with student-drivers.
+    \item Incorporate a non-monetary point system to remunerate student-drivers after a successful rideshare service, in collaboration with the USC - Community Extension Service (CES) Office.
+    \item Deploy and conduct pilot testing with the students of the Department of Computer Engineering.
+\end{enumerate}
+
+\section{Scope and Limitations}\label{sec:scope}
+This project focuses on a ridesharing system designed for students traveling to and from the University of San Carlos - Talamban Campus (USC-TC) in Cebu City. The mobile application does not include inbound and outbound trips to and from the University of San Carlos - Downtown Campus (USC-DC). The rideshare service is also limited to two ride circumstances: 
+\begin{itemize}
+    \item A student-driver picks up nearby student-passengers from accessible pick-up locations en route to USC-TC; 
+    \item  A student-driver departs USC-TC and drops off student-passengers in drop-off locations en route to the student-driver’s destination.
+\end{itemize}
+
+Following the recommendations from Jung Alcover, a former Land Transportation Franchising and Regulatory Board (LTFRB) employee who reviewed the thesis proposal, the application will limit its driver and passenger users to a controlled group of well-acquainted individuals with established relationships during the User Onboarding. This is to lessen the burden on the student-driver if the situation arises where said driver get into a vehicular accident when performing a ridesharing service. During the deployment of the mobile application, detailed profiles of the student-drivers will be displayed for the passengers to build mutuality. Access to the mobile application will be limited to students within USC and will not be made public on application stores such as Google Play Store and Apple App Store. Moreover, no monetary transaction will occur between users. Instead, student-drivers who complete a rideshare service will earn \textit{'Ride Tokens'}, convertible into Community Extension Service (CES) points through collaboration with the USC - CES Office. These restrictions ensure that the application is not classified as a Transport Network Vehicle Service, thereby exempting it from LTFRB accreditation requirements while making it legal to operate. 
+
+Due to current resource and development constraints, this version of the project will not yet include a full real-time emergency response system, such as a link to live ride tracking, an incident reporting system, or direct contact with authorities. The application only includes a basic emergency button. When a user presses it, the administrators receive a notification and the event is recorded in the admin logs with the user's name, role, and the date and time it was pressed (Section~\ref{sec:safety}). While it is acknowledged that the importance of addressing safety and security incidents, such as accidents, harassment, or health emergencies, a complete emergency response system falls beyond the scope of this implementation. However, safety protocols such as verification of student status, required documentation for drivers, and adherence to mobile application rules and regulations will be enforced to mitigate risk as much as possible. Emergency response functionalities are recognized as a critical future enhancement and may be integrated in later versions of the mobile application. Moreover, group rideshare, where one passenger can book for multiple passengers, is a feature that has been considered by the proponents and can be implemented once the base ride-matching algorithm is successfully tested.
+
+The iOS version of the application could not receive push notifications during testing. Push notifications on iOS need a paid Apple Developer Program account, and the proponents used free Apple IDs. Notifications were therefore tested on Android devices and emulators only, and iOS users have to open the application to see new requests, ride updates, and chat messages.
+
+The ridesharing mobile application will be developed for iOS and Android devices, with deployment and testing restricted to a specific sample of USC-TC students from the Computer Engineering Department. The sample size will be based on the respondent turnout from the preliminary survey. Participants, both student-drivers and student-passengers, must be enrolled at USC during the 1st Semester of AY 2025–2026.
+
+
+\section{Significance of the Study}
+The thesis project aims to provide more knowledge towards the practicality of a ridesharing application for undergraduate students enrolled at the University of San Carlos in Cebu City. Results from the project will give better understanding on how the application was able to meet the commuting needs of the students. This will help bring light to the concept of ridesharing and its potential to improve the current state of the transport sector. This may also serve as a foundation for developing better sustainable transportation services in the future. By providing a technological platform for ridesharing, it can be widely used by the intended community with little to no drawbacks. The major beneficiaries of this project are:
+\begin{itemize}
+    \item Undergraduate students enrolled at the University of San Carlos, as the project findings will help students understand the benefits of ridesharing over the common transportation services such ride-hailing and carpooling.
+    \item The USC community, since adoption of a ridesharing application can promote sustainable practices for its students while fostering community engagement and peer-to-peer relations.
+    \item The current and future researchers of the study, where the future researchers can develop a better implementation of the project, addressing the challenges encountered by the current researchers.
+    \item The urban environment of Cebu City, by reducing the number of single-occupant vehicles on the road. With wider adoption, this will have the potential to not only lessen the city’s greenhouse gas emissions, but also minimize traffic congestion.
+\end{itemize}
+
+
+
+

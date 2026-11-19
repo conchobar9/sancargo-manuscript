@@ -1,0 +1,46 @@
+% Appendix: Nine Real-World Test Clips
+\chapter{Nine Real-World Test Clips}
+\label{app:clips}
+\clearpage
+
+The nine clips were played through a Bluetooth speaker near the microphone of the device in the app, and each has an expected mood that was set before testing. Table~\ref{tab:ai-clips} lists the clips and what was observed. Correct means that the mood given by the model, or the tag displayed by the app on the emulator and the devices, matched the expected mood. Incorrect means that it did not. Songs 1 to 9 are numbered as in Section~\ref{sec:ai-ondevice}.
+
+{
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{|>{\centering\arraybackslash}p{.05\textwidth}|>{\raggedright\arraybackslash}p{.24\textwidth}|>{\raggedright\arraybackslash}p{.10\textwidth}|>{\raggedright\arraybackslash}p{.12\textwidth}|>{\raggedright\arraybackslash}p{.20\textwidth}|>{\raggedright\arraybackslash}p{.14\textwidth}|}
+\caption{Real-world clips, expected moods, and results}\label{tab:ai-clips}\\
+\hline
+\textbf{No.} & \textbf{Clip} & \textbf{Expected mood} & \textbf{Final model on Colab} & \textbf{Emulator (displayed tag)} & \textbf{Physical devices} \\
+\hline
+\endfirsthead
+\hline
+\textbf{No.} & \textbf{Clip} & \textbf{Expected mood} & \textbf{Final model on Colab} & \textbf{Emulator (displayed tag)} & \textbf{Physical devices} \\
+\hline
+\endhead
+\endfoot
+1 & Traffic noise & Quiet & Correct & Correct & Correct \\
+\hline
+2 & “I’ll Look Around” by Billie Holiday & Chill & Correct & Correct & Correct \\
+\hline
+3 & “Hootie Frutti” by KATSEYE & Lively & Correct & Correct (the first reading was Quiet 0.57 and Lively 0.43) & Correct \\
+\hline
+4 & Car aircon noise & Quiet & Correct & Correct (the tag briefly changed to Chill) & Correct \\
+\hline
+5 & Podcast clip from Michelle Obama & Chill & Called Lively & Called Quiet (97\% to 100\% confidence) & Called Lively \\
+\hline
+6 & “Not OK” by 5 Seconds of Summer & Lively & Correct & Correct & Correct \\
+\hline
+7 & Car revving sound effect & Quiet & Correct & Correct & Correct \\
+\hline
+8 & “Indecisions” by Rex Orange County and Daniel Caesar & Chill & Called Lively & Correct & Called Lively \\
+\hline
+9 & “Leak It” by FLO & Lively & Correct & Correct & Correct \\
+\hline
+ & Total correct &  & 7 of 9 & 8 of 9 & 7 of 9 on each device \\
+\hline
+\end{longtable}
+}
+
+The model was not trained on speech, so the podcast clip (song 5) is outside the training data.

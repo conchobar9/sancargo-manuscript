@@ -1,0 +1,131 @@
+% Appendix: System Test Cases
+\chapter{System Test Cases}
+\label{app:systemcases}
+\clearpage
+
+The 32 system test cases are listed below by area. The actual result, who ran the case, the date, and any defect found are recorded per device in the alpha testing checklist and reported in Chapter~4.
+
+\section*{B1. Accounts and admin}
+\small
+\begin{longtable}{|p{1.1cm}|p{6.6cm}|p{6.3cm}|}
+\hline
+\textbf{ID} & \textbf{Steps} & \textbf{Expected result} \\
+\hline
+\endhead
+S-A1 & Register a passenger with a USC email. Upload Study Load, Parent’s Permit and USC ID. Click the verification email. & Account shows as pending until an admin approves it. No ride features before then. \\
+\hline
+S-A2 & Register a car driver with Study Load, Parent’s Permit, OR/CR, Driver’s License, MVP Pass, a vehicle category and a fuel type. Repeat for a motorcycle with helmet proof. & Registration completes. Motorcycle drivers get gasoline only. \\
+\hline
+S-A3 & Try to register with a non-USC email. & Registration is refused with a clear message. \\
+\hline
+S-A4 & As admin, approve one applicant, deny one, and suspend one approved user. & Each applicant sees the right message. A suspended user cannot use ride features. \\
+\hline
+S-A5 & Open Profile on passenger, driver and admin accounts. & Only drivers see Ride Token balances and mood detection. Only passengers pick a mood preference. Only admins see reports and suspension tools. \\
+\hline
+S-A6 & Log in with an account whose email is not yet verified. & Login is blocked on the login screen. \\
+\hline
+\end{longtable}
+\normalsize
+
+\section*{B2. Ride flow}
+\small
+\begin{longtable}{|p{1.1cm}|p{6.6cm}|p{6.3cm}|}
+\hline
+\textbf{ID} & \textbf{Steps} & \textbf{Expected result} \\
+\hline
+\endhead
+S-B1 & Passenger off campus requests a ride at an approved pickup point. Then try writing a request document directly with a client (rules emulator or a debug call). & The request exists with direction set by the server (inbound). The direct write is refused. \\
+\hline
+S-B2 & Driver goes Available, selects the pickup point, accepts the request. & Request becomes accepted, remaining capacity drops by one, and the passenger sees the driver’s name, vehicle and plate. \\
+\hline
+S-B3 & Driver starts the trip, confirms pickup, then completes it near the Bunzel Lobby. & Statuses advance accepted, picked up, completed. Passenger gets the arrival screen; driver gets the completion screen. \\
+\hline
+S-B4 & Send chat messages both ways during the ride, then again after completion. & Messages appear on the other device. Chat stays available for about a day after completion, then closes. \\
+\hline
+S-B5 & Outbound: both on campus. Driver picks an end destination by typing (Places search) and by dropping a pin. Passenger picks a drop-off point. & Driver sees drop-off points along the route with request counts. Passengers are grouped by shared drop-off point. \\
+\hline
+S-B6 & Passenger cancels before acceptance. Driver cancels an accepted passenger. Driver ends a started trip early with a reason. & Each path completes and the other side is told why. \\
+\hline
+S-B7 & Two passengers request the same pickup point at different times. One widens their preference after two minutes. & The earlier request is offered first. Widening keeps the original place in line. \\
+\hline
+S-B8 & Passenger rates the driver. Open both users’ ride history. & The rating saves and the ride appears in history with the right details. \\
+\hline
+\end{longtable}
+\normalsize
+
+\section*{B3. Matching filters}
+\small
+\begin{longtable}{|p{1.1cm}|p{6.6cm}|p{6.3cm}|}
+\hline
+\textbf{ID} & \textbf{Steps} & \textbf{Expected result} \\
+\hline
+\endhead
+S-C1 & Place the driver 350 m from the pickup, then 600 m away, with a free seat. & Within 400 m the driver is notified and can accept. At 600 m there is no prompt and the server refuses an accept. \\
+\hline
+S-C2 & Fill the vehicle to capacity, then make a new request. & No prompt to that driver and the server refuses an accept. \\
+\hline
+S-C3 & Try to accept a request with the driver’s stored location more than 400 m from the pickup. & matchRide refuses it. \\
+\hline
+S-C4 & Put an inbound request’s driver on the wrong side of the campus fence. & matchRide refuses it on direction. \\
+\hline
+S-C5 & Passenger accepts only Quiet. Test a Lively driver, a Quiet driver, and a driver with no mood tag. & Lively driver is hidden and blocked. Quiet and unknown drivers match (the filter fails open). \\
+\hline
+S-C6 & Passenger prefers motorcycle. Test a car driver, a motorcycle driver, and “No preference”. & Car driver is blocked for a motorcycle-only passenger. “No preference” matches everyone. \\
+\hline
+\end{longtable}
+\normalsize
+
+\section*{B4. Tokens and fuel}
+\small
+\begin{longtable}{|p{1.1cm}|p{6.6cm}|p{6.3cm}|}
+\hline
+\textbf{ID} & \textbf{Steps} & \textbf{Expected result} \\
+\hline
+\endhead
+S-D1 & Complete one trip. Check the reward ledger. Call the completion again. & Exactly one award. The client sent only a trip ID. A retry returns the same award. Check against the formula: fuel price $\times$ (distance $\div$ efficiency) $\div$ 5, rounded up to 0.01 (PHP 60/L, 13 km, 26 km/L gives 6.00). \\
+\hline
+S-D2 & Complete a trip with two or three passengers. & The first passenger gets the full value. Riders who travel the whole shared distance split equally. Others follow Equation~3.6. The breakdown on the admin card matches. \\
+\hline
+S-D3 & Set a semester period with the admin screen or the set-ces-period script, then push a driver’s total near 300. & The award is clamped at 300 per semester. The excess is forfeited, and the ledger shows the uncapped amount and the cap reason. \\
+\hline
+S-D4 & On Admin Fuel Price, tap “Refresh now”. & Prices and week update with a clean status. If DOE has no newer week, the stored price is untouched and the status says why. There is never a fallback price. \\
+\hline
+\end{longtable}
+\normalsize
+
+\section*{B5. Notifications and chat}
+\small
+\begin{longtable}{|p{1.1cm}|p{6.6cm}|p{6.3cm}|}
+\hline
+\textbf{ID} & \textbf{Steps} & \textbf{Expected result} \\
+\hline
+\endhead
+S-E1 & Run a full ride with the app in the background on both devices. & Push for accepted, picked up, completed and cancelled reaches the right person. \\
+\hline
+S-E2 & Driver already on a trip with a free seat passes within range of a pending request. & The driver is prompted mid-trip, not only at request creation. \\
+\hline
+S-E3 & Send a chat message and read the push on the lock screen. & Push arrives. It includes the first 140 characters of the message and the sender’s name. \\
+\hline
+S-E4 & Tap a chat push and a ride-completed push. & Chat opens the Chats tab, ride completed opens the Rides tab, anything else opens Home. \\
+\hline
+\end{longtable}
+\normalsize
+
+\section*{B6. Safety and privacy}
+\small
+\begin{longtable}{|p{1.1cm}|p{6.6cm}|p{6.3cm}|}
+\hline
+\textbf{ID} & \textbf{Steps} & \textbf{Expected result} \\
+\hline
+\endhead
+S-F1 & Press the emergency button, read the dialog, confirm once. & Every approved admin gets a push and the event shows under Reports, Panic Alerts. The dialog says to call emergency services for immediate danger. A client cannot read or write the emergency alert records. \\
+\hline
+S-F2 & Withdraw a test account with no active ride, then try one with an active ride. & The first deletes the Auth account, profile, documents and detailed records, keeping an anonymous token archive. The second is blocked. \\
+\hline
+S-F3 & Driver goes Available and then Unavailable. Watch the consent dialog and check Storage and Firestore. & Microphone consent appears before the OS prompt. Audio is sampled only while Available. No audio is stored anywhere, only the mood label. \\
+\hline
+S-F4 & Run the rules tests and then try forbidden actions by hand: read another user’s documents, write the reward ledger, move a request to accepted. & Every forbidden action is refused. \\
+\hline
+\end{longtable}
+\normalsize
+

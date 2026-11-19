@@ -1,0 +1,42 @@
+\chapter{Conclusions}
+
+\section{Summary}
+This thesis project outlines the development and deployment of a ridesharing mobile application that will be used by USC students. The goal of the project is to provide an innovative and sustainable transportation service that is accessible and safe for students who commute. Chapter 1 introduces the main problem that the project will address, which revolves around the environmental impact of road transportation. It also points to the lack of emerging technology utilized in modern ride-hailing applications. The proponents have also established the objectives, limitations, and significance of the thesis project. In Chapter 2, the proponents investigate related studies, focusing on artificial intelligence for music classification, existing rideshare applications and their algorithms, student behaviors toward rideshare services, and the value of ridesharing in a regional context of Southeast Asia. Then, a synthesis is formed to integrate the insights of the literature review to shape the path of the project. Finally, Chapter 3 looks at the conceptual framework of the ride-sharing system, core algorithms, and the flow of the system. Chapter 4 reports the results so far. The mood classifier reached 89\% accuracy on the held-out test set, which was split by source clip, all 332 Flutter unit tests and 9 Cloud Functions checks passed, and all 32 system test cases passed on the emulators and 20 of 32 on physical devices. Beta testing, user acceptance testing, and the preliminary survey are still to be completed. \TODO{Update this summary when the remaining results are in.}
+
+
+\section{Conclusions}
+\TODO{Write the conclusions after the beta testing and UAT results, one per objective.}
+
+\section{Recommendations}
+\label{sec:recs}
+Based on the findings in Section~\ref{sec:ai-results}, the following improvements to the mood classifier are recommended for future work.
+
+\textbf{Record real vehicle-cabin audio for the Quiet class.} The Quiet class was trained on synthetic noise and looped ESC-50 recordings, and the car-cabin recording used in model selection was misclassified in four of the five training runs. Recordings from real cabins, with engine, air-conditioning, and road noise at different speeds, would match the deployment setting more closely.
+
+\textbf{Add more independent training material and split it more strictly.} About 420 source clips per class carried most of the learning. Taking segments from different parts of each track, adding more tracks, and splitting by artist or album would give more independent examples and keep near-duplicate material out of both the training and test sets.
+
+\textbf{Improve the Chill and Lively boundary.} Most test errors, and both real-world misses, were between these two classes, whose labels come from genre and mood tags. Labels agreed by several annotators, or additional descriptors such as energy and valence, may separate them better.
+
+\textbf{Evaluate on a larger real-world set.} Nine songs could not separate 7 of 9 from 8 of 9. A set of at least 30 songs, balanced across the three classes and captured through phone microphones inside vehicles, would give a more reliable estimate of the accuracy drivers will experience.
+
+\textbf{Reduce training instability.} Two of the five runs reached their best validation accuracy within the first three epochs and then declined. Feature-level augmentation (time and frequency masking), stronger regularization, and reporting results across several random seeds are recommended.
+
+\textbf{Use the age of the mood tag in matching.} The matching function does not currently check how old a driver’s moodTag is, so a tag can persist after the music changes. The tag’s update timestamp could be used to ignore tags older than a set limit.
+
+\textbf{Compare mood as a soft ranking with mood as a filter.} Because mood is applied as a fail-open filter, a wrong but known tag can keep a passenger who chose a specific mood from seeing that driver. Ranking compatible drivers higher, instead of excluding the others, would limit the effect of a misclassification on ride availability.
+
+\textbf{Decide how spoken audio should be classified.} Drivers may play podcasts or talk radio, which the training data does not cover. On the emulator the podcast clip was classified Quiet with high confidence, and in the notebook it was classified Lively. Adding a class for speech, or adding speech to Chill or Quiet, and retraining would remove this ambiguity.
+
+\textbf{Survey the ride atmospheres that passengers prefer.} The three moods rest on the proponents’ assumptions about what students want from a ride. A short survey of student passengers, together with a count of the moods they choose during testing, would show whether the assumption holds, and a comparison of matched and unmatched rides would show whether mood matching improves them.
+
+\textbf{Check the mood definitions with human raters.} No external experts were available. Several raters labeling a sample of clips without seeing the source label, with their agreement reported, would verify the moods more directly than the genre and mood tags do.
+
+\textbf{Compare other signals for matching.} Audio was the only attribute used. A driver-chosen tag, driving style, or a combination of signals could be compared with audio on the same rides.
+
+\textbf{Test shorter windows and measure battery use.} The window test found similar accuracy for windows of 2.5 to 10 seconds. A shorter window could reduce the microphone time and the processing for each reading, and give the first tag earlier. The model would have to be retrained for it, and its battery use, processor load, and robustness to short bursts of speech or noise would have to be measured on the devices.
+
+\textbf{Address the issues found in beta testing.} Testers reported visual interface issues on Android devices, interface text that was unclear, mood buttons that glitched, and notifications and screens that were delayed after completing a ride. These should be fixed before the application is used more widely. Testers also asked for more pick-up and drop-off points, different route options on outbound trips, a dark mode, live sharing, and a calling feature. The first two bear on how useful the application is in everyday commuting, and the others can be considered for later versions.
+
+\textbf{Explain the mood feature to users.} Mood expectation was among the most confusing parts for testers. A short explanation of what the mood preference does, and that a driver's mood is detected from the music in the car, would help users know what to expect.
+
+\TODO{Add the recommendations from the UAT results.}
