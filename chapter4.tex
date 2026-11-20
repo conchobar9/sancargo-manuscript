@@ -347,14 +347,12 @@ The mood AI was tested at six levels, from the feature code up to the app on the
 \hline
 5. Real-world songs & The model and the app & Nine songs with known expected moods & 7 of 9 on Colab, 8 of 9 on the emulator, and 7 of 9 on each phone (Figure~\ref{fig:ai-clips}) \\
 \hline
-6. App tests & The Flutter test suite & flutter test & 336 passed and 1 skipped (the Dart versus Librosa test skips itself without a reference file).\\
+6. App tests & The Flutter test suite & flutter test & 345 passed, 0 skipped (with the Librosa reference file supplied; without it, 344 passed and 1 skipped).\\
 \hline
 \end{longtable}
 }
 
-\textbf{App tests.} Of the 336 tests that passed, 38 are in six test files for the mood code on the device and the ride-matching model: the audio source (3), the feature extractor check (1), the preference selector (6), the preference set (11), the smoother (5), and the ride match model (12). The matchRide conditions of Table~\ref{tab:ai-accept} run in the Cloud Functions code, which is covered by the Cloud Functions test suite and nine verification scripts (Section~\ref{sec:phases}). The matchRide verification script has 18 checks, and five of them cover the mood filter: a passenger who accepts only Chill is refused a Lively driver, a passenger who accepts Chill and Quiet is matched with a Quiet driver and refused a Lively driver, a driver whose tag is unknown is accepted (fail open), and a passenger with no preference accepts any driver. In the system test cases (Section~\ref{sec:system-results} and Appendix~\ref{app:systemcases}), S-C5 covers the filter in the whole app: a passenger who accepts only Quiet is tested with a Lively driver, a Quiet driver, and a driver with no mood tag, and S-F3 checks that audio is sampled only while the driver is available and that only the mood label is stored. 
-
-\CONFIRM{Table~\ref{tab:ai-levels} says 336 Flutter tests passed with 38 in six mood and matching files. Section~\ref{sec:unit-results} and the results slides say 332 passed, with 33 in the mood detection area. Please confirm which counts are final.}
+\textbf{App tests.} Of the 345 tests that passed, 38 are in six test files for the mood code on the device and the ride-matching model: the audio source (3), the feature extractor check (1), the preference selector (6), the preference set (11), the smoother (5), and the ride match model (12). The matchRide conditions of Table~\ref{tab:ai-accept} run in the Cloud Functions code, which is covered by the Cloud Functions test suite and nine verification scripts (Section~\ref{sec:phases}). The matchRide verification script has 18 checks, and five of them cover the mood filter: a passenger who accepts only Chill is refused a Lively driver, a passenger who accepts Chill and Quiet is matched with a Quiet driver and refused a Lively driver, a driver whose tag is unknown is accepted (fail open), and a passenger with no preference accepts any driver. In the system test cases (Section~\ref{sec:system-results} and Appendix~\ref{app:systemcases}), S-C5 covers the filter in the whole app: a passenger who accepts only Quiet is tested with a Lively driver, a Quiet driver, and a driver with no mood tag, and S-F3 checks that audio is sampled only while the driver is available and that only the mood label is stored. 
 
 The confusion matrix in Figure~\ref{fig:confusion} shows where the model is right and wrong. Most of its 89 errors are between Chill and Lively (46 Chill segments called Lively and 34 Lively segments called Chill). Quiet is almost never confused with them: no Chill or Lively segment was called Quiet, and only 9 of 279 Quiet segments were called Chill or Lively. Figure~\ref{fig:ai-prf} shows the same by class. Quiet has a precision of 1.00 and a recall of 0.97, whereas Chill and Lively score between 0.83 and 0.87 on precision and recall. The five runs in Figure~\ref{fig:ai-runs} differ by about 3 points, which is why the run was chosen by validation accuracy and a separate four-song check and not by the test set. In Figure~\ref{fig:ai-clips}, the version 3 model scored 6 of 9 and the final model 7 of 9, and the devices scored one song lower than the emulator, as explained in Section~\ref{sec:ai-ondevice}. Nine songs are too few to separate 7 of 9 from 8 of 9.
 
@@ -388,7 +386,7 @@ The confusion matrix in Figure~\ref{fig:confusion} shows where the model is righ
 
 \section{Alpha Testing: Unit Testing}
 \label{sec:unit-results}
-Unit testing was run with \texttt{flutter test} and the Cloud Functions test suite. All 332 Flutter tests passed (1 test was skipped), which is a 100\% pass rate with no failures. All 9 of the Cloud Functions and security rules checks passed. Table~\ref{tab:unit} shows the Flutter tests by area.
+Unit testing was run with \texttt{flutter test} and the Cloud Functions test suite. All 345 Flutter tests passed, with no failures and none skipped (the Dart versus Librosa test runs when its reference file is supplied), which is a 100\% pass rate. All 9 of the Cloud Functions and security rules checks passed. Table~\ref{tab:unit} shows the Flutter tests by area.
 
 \begin{table}[htbp]
     \centering
@@ -401,16 +399,14 @@ Unit testing was run with \texttt{flutter test} and the Cloud Functions test sui
         \textbf{Area} & \textbf{Total cases} & \textbf{Result} \\
         \hline
         Accounts and registration & 44 & Pass \\
-        Ride flow and matching & 92 & Pass \\
-        Tokens, fuel, and CES period & 45 & Pass \\
-        Admin, reports, and ratings & 59 & Pass \\
-        Mood detection & 33 & Pass \\
-        Shared UI and safety & 38 & Pass \\
+        Ride flow and matching & 93 & Pass \\
+        Tokens, fuel, and CES period & 54 & Pass \\
+        Admin, reports, and ratings & 76 & Pass \\
+        Mood detection (mood code only, without ride matching) & 32 & Pass \\
+        Shared UI and safety & 46 & Pass \\
         \hline
     \end{tabular}
 \end{table}
-
-\TODO{The case counts in Table~\ref{tab:unit} add up to 311, but 332 tests passed. Please reconcile (for example, a row that was cut off in the results slides, or tests outside these six areas).}
 
 \section{Alpha Testing: System Testing}
 \label{sec:system-results}
@@ -462,10 +458,10 @@ Table~\ref{tab:measure} gives the measurements recorded during system testing. R
     \par\smallskip{\footnotesize Emulator: Google Pixel 8 Pro. Android: Samsung Galaxy A06 5G. iOS 1: iPhone 17. iOS 2: iPhone 15 Pro Max. App size was read from each phone's storage settings.}
 \end{table}
 
-\CONFIRM{Explain the 285 MB app size on the Android phone, which is about three times the iOS figures (for example, a debug build or cached data), and state which build was installed.}
+The Android app was installed from Android Studio as a debug build. A debug build is not size-optimized, and its package includes native libraries for three CPU architectures (arm64-v8a, armeabi-v7a, and x86\_64) so that one build runs on different Android phones. The debug APK was 109 MB, and the 285 MB shown in the phone's settings also includes the unpacked libraries, compiled code, and app data. The iOS build contains only the architecture of the device it is installed on. For comparison, a release build with one APK per CPU architecture is 32.0 MB (armeabi-v7a), 36.6 MB (arm64-v8a), and 39.9 MB (x86\_64), so the Android figure reported in testing is larger than what a user would install from a release.
 
 \subsection{Limits Found}
-The main limit found in alpha testing was the difficulty of performing matched rides with physical devices. Matching needs a driver and a passenger device in the right places at the same time. Three cases that need such rides (S-B5, S-B7, and S-D2) were run for one round only, against five rounds for the other cases. \CONFIRM{State why these three cases were run for one round only.}
+The main limit found in alpha testing was the difficulty of performing matched rides with physical devices. Matching needs a driver and a passenger device in the right places at the same time. Three cases that need such rides (S-B5, S-B7, and S-D2) were run for one round only, against five rounds for the other cases. Each round of these cases needed a driver to drive a vehicle with a passenger device in the matching area, and the proponents limited it to one round to save fuel and time.
 
 \section{Beta Testing}
 \label{sec:beta-results}
