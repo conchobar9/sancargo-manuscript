@@ -655,15 +655,13 @@ The outbound ride-matching system at USC Talamban Campus leverages advanced comm
     {\includegraphics[width=#1\textwidth,height=0.80\textheight,keepaspectratio]{images/#2.png}}%
     {\fbox{\parbox[c][7cm][c]{0.8\textwidth}{\centering Flowchart pending:\\[2pt]\texttt{#2}}}}}
 
-% \flowsplit{caption}{label}{chart name}: a tall flowchart cut into 2 or 3 pieces (images/<name>_a.png, _b, _c),
-% each piece set at full text width so the text stays readable; later pieces repeat the lane header.
-\providecommand{\flowpiece}[2]{\begin{figure}[htbp]\centering\includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{images/#1.png}#2\end{figure}}
+% \flowsplit{caption}{label}{chart name}: a compact swimlane flowchart (images/compact-flowcharts/<name>.png),
+% set as one figure at full text width so that it fits on a single page.
 \providecommand{\flowsplit}[3]{%
-  \flowpiece{#3_a}{\caption{#1}\label{#2}}%
-  \begingroup\def\x{\ContinuedFloat}%
-  \begin{figure}[htbp]\ContinuedFloat\centering\includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{images/#3_b.png}\caption[]{#1 (continued)}\end{figure}%
-  \IfFileExists{images/#3_c.png}{\begin{figure}[htbp]\ContinuedFloat\centering\includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{images/#3_c.png}\caption[]{#1 (continued)}\end{figure}}{}%
-  \endgroup}
+  \begin{figure}[htbp]\centering
+    \includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{images/compact-flowcharts/#3.png}
+    \caption{#1}\label{#2}
+  \end{figure}}
 
 \section{System Flow}
 \label{sec:flow}
