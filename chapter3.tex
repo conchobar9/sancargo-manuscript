@@ -556,6 +556,8 @@ When a user opens the passenger or driver menu, their real-time GPS location is 
     \label{fig:routing}
 \end{figure}
 
+\rev{For the user acceptance testing (UAT), the geofence covers the Bunzel building only, instead of the whole campus perimeter described above, and every UAT ride is made inside the campus. A trip that starts inside the Bunzel polygon is classified as outbound, and its drop-off points are other campus buildings, such as SAFAD and SAS. A trip that starts outside the Bunzel polygon, for example at SAFAD or SAS, is classified as inbound. Outbound passengers are picked up at Bunzel, where the driver starts, and the approved drop-off points (outbound) and pickup points (inbound) are other campus buildings, set by the administrators before the testing. The server and the client copies of the polygon are changed together and are checked with the same verification script.}
+
 A core feature of the routing system is its ability to detect deviations from the suggested route and automatically generate a new optimized path in real time. A routing example is shown in Figure~\ref{fig:routing}. This applies to both inbound and outbound trips. For inbound travel to USC Talamban Campus, the application initially calculates an optimized route from the student driver’s current location to the campus, incorporating predefined pickup points situated along major roads and bus stops. As the driver begins the journey, the system constantly monitors their GPS position. If the driver takes a turn or route that deviates from the suggested path, the Google Routes API (through the \texttt{computeRouteAsia} Cloud Function) is called to recalculate a new route to the original destination—USC Talamban Campus—while still attempting to pass through as many nearby pickup points as possible. The route is recalculated when the driver is 75~m or more away from it, or has moved 50~m since the last calculation, at most once every 15 seconds. This dynamic rerouting, demonstrated in Figures~\ref{fig: generated route} and~\ref{fig: recalculated route} ensures minimal disruption to the ride-matching process, while allowing the driver to navigate based on real-time road conditions or personal preferences.
 
 \begin{figure}[htbp] % 'h' means "here" (suggested placement)
@@ -668,7 +670,7 @@ The outbound ride-matching system at USC Talamban Campus leverages advanced comm
 This section follows a user through the application. Each flow is shown twice: as a flowchart that gives the logic, and as screenshots of the actual application that show what the user sees at each step. The flowcharts use one colour per role (blue for steps shared by every user, green for drivers, yellow for passengers, and red for administrators). Circles name the screen a flow starts from or continues to.
 
 \subsection{User Registration and Login}
-A new user first sees a short welcome carousel, shown once per device (Figure~\ref{fig:ui-register}a). Registration then takes place in the steps of Figure~\ref{fig: registration}. The user chooses Passenger or Driver and enters a name, a USC email address ending in \texttt{@usc.edu.ph}, and a password (Figure~\ref{fig:ui-register}b). Drivers also declare their vehicle class, vehicle type, fuel type, and number of seats. The required documents are then uploaded (Figure~\ref{fig:ui-register}c): the USC School ID, Study Load, and Parent's Permit for every user, plus the driver's license, OR/CR, and campus Motor Vehicle Pass for drivers, and proof of a second helmet for motorcycle drivers (Section~\ref{sec:safety}). Before submitting, the user accepts the terms and the liability waiver. A verification link is sent to the email address, and an administrator reviews the documents before the account can be used. Until then, and if the registration is denied or the account is suspended, the user sees a status screen with the reason (Figure~\ref{fig:ui-register}d) instead of the application.
+A new user first sees a short welcome carousel, shown once per device (Figure~\ref{fig:ui-register}a). Registration then takes place in the steps of Figure~\ref{fig: registration}. The user chooses Passenger or Driver and enters a name, a USC email address ending in \texttt{@usc.edu.ph}, and a password (Figure~\ref{fig:ui-register}b). Drivers also declare their vehicle class, vehicle type, fuel type, and number of seats. The required documents are then uploaded (Figure~\ref{fig:ui-register}c): \rev{the USC School ID and Study Load for every user}, plus the driver's license, OR/CR, and campus Motor Vehicle Pass for drivers, and proof of a second helmet for motorcycle drivers (Section~\ref{sec:safety}). Before submitting, the user accepts the terms and the liability waiver. A verification link is sent to the email address, and an administrator reviews the documents before the account can be used. Until then, and if the registration is denied or the account is suspended, the user sees a status screen with the reason (Figure~\ref{fig:ui-register}d) instead of the application.
 
     \flowsplit{User Registration}{fig: registration}{Registration}
 
@@ -1008,7 +1010,7 @@ To prevent over-rewarding for multiple pickups, tokens are distributed proportio
 The first passenger always contributes the full token value for the total distance. The ratio in Equation~3.6 does not depend on the vehicle and grows without bound as a passenger's pickup point approaches the first passenger's. This is acceptable for regular rides because pickup and drop-off points are set in advance by the administrator and are never arbitrarily close; arbitrary exit points are handled by the flat early drop-off rate above.
 
 \section{Safety Measures}\label{sec:safety}
-\subsection{Registration}
+\subsection{Registration}\label{sec:registration}
 To ensure the security and accountability of all users within the platform, especially since this service involves ridesharing among students, the following safety measures and verification steps were strictly implemented during registration and ongoing use:
 
 \vspace{1em}
@@ -1024,10 +1026,6 @@ To ensure the security and accountability of all users within the platform, espe
         \item Confirms the driver is a currently enrolled student at USC
     \end{itemize}
         
-    \item Parent’s Permit 
-    \begin{itemize}
-        \item Required for students as part of the general consent for student participation
-    \end{itemize}
 
     \item Valid Driver’s License  
     \begin{itemize}
@@ -1053,6 +1051,7 @@ To ensure the security and accountability of all users within the platform, espe
 
 \vspace{1em}
 \indent Document Verification Requirements (for Students)
+\rev{(The Parent's Permit was removed from the lists of required documents in this version, because all testing is inside the campus and every participant is an adult who gives his or her own informed consent.)}
 \begin{enumerate}
     \item USC School ID
     \begin{itemize}
@@ -1064,10 +1063,6 @@ To ensure the security and accountability of all users within the platform, espe
         \item Confirms the passenger is a currently enrolled student at USC
     \end{itemize}
         
-    \item Parent’s Permit 
-    \begin{itemize}
-        \item Required for students as part of the general consent for student participation
-    \end{itemize}
 \end{enumerate}
 
 \vspace{1em}
@@ -1098,13 +1093,112 @@ These requirements aim to create a trusted, school-exclusive ridesharing environ
 \begin{enumerate}
     \item \textbf{Minimizing the Risk of Harm for the Preliminary Survey}: For the preliminary Google Forms survey aimed at understanding participants' residential locations and commuting preferences, the primary risk involves the sensitivity of location-related data. To minimize this, data collection was strictly limited to what is essential for focusing the app's geographical development. Participation was voluntary, and respondents were assured that their specific location data would be handled with care, potentially aggregated or pseudonymized early in the analysis to prevent individual identification and used solely for the purpose of tailoring the application's scope. No adverse consequences would arise from choosing not to participate or from any specific responses provided.
 
-    \item \textbf{Minimizing the Risk of Harm during App User Testing}: During the user testing phase of the ridesharing application prototype, participant safety is paramount due to the potential for physical interactions. To mitigate risks, the application includes three safety measures. First, drivers are verified before they can offer rides, through confirmation of university enrollment, a valid driver's license, and a valid USC campus vehicle sticker. Second, a rating system lets passengers rate their drivers to foster accountability. Third, an emergency button lets any user raise an alert during a ride. Pressing it sends a notification to the administrators and creates an entry in the admin logs showing the name of the user who pressed it, their role (driver or passenger), and the date and time it was pressed. The button does not contact the authorities or share the user's live location; the administrators decide how to follow up with the user.
+    \item \rev{\textbf{Minimizing the Risk of Harm during App User Testing}: During the user testing phase, participant safety is paramount because of the physical interaction in a vehicle. The risks and their handling are set out in Section~\ref{sec:uat-safety} (safety protocol) and Section~\ref{sec:risk} (risk assessment). In summary: the UAT is held inside the campus only and lasts one week; drivers are verified before they can offer rides, through confirmation of university enrollment, a valid driver's license, and a valid USC campus vehicle sticker; passengers and drivers can decline or stop any ride; a rating system fosters accountability; an emergency button lets any user raise an alert (it notifies the administrators and creates an entry in the admin logs with the user's name, role, date and time, and it does not contact the authorities or share the user's live location); and a designated safety monitor follows an escalation procedure.}
 
     \item \textbf{Obtaining Informed Consent}: A robust informed consent process was implemented for both the preliminary survey and the application testing phases. For the Google Forms survey, participants received a clear explanation of its purpose (to gather data on location and commuting preferences for app development), how their data would be used, and an assurance of voluntary participation. For the application prototype, this process was integrated into the onboarding interface, and the microphone is used only after a plain-language consent dialog appears before the operating system's own permission prompt. Users (both drivers and passengers) received plain-language information about the app’s purpose, functionality, specific data usage (including location tracking and ride history), potential risks associated with ridesharing, and their right to withdraw at any time without penalty, requiring their active acknowledgement and agreement before participation.
 
-    \item \textbf{Protecting Privacy and Confidentiality}: Protecting user privacy and data confidentiality is crucial for both the survey and app testing. Data from the Google Forms survey was securely managed, with access restricted to the research team, and used solely for its stated purpose. For the application, sensitive data such as location, personal identifiers, and ride history was managed using Firebase, adhering to principles like data minimization (collecting only essential data like user IDs, ride-specific location, history, and Ride Token transactions). Personal data was pseudonymized using unique identifiers in Firebase Firestore. Firebase's built-in encryption (AES-256 for data at rest, TLS 1.3 for data in transit), strict access controls via Firebase Security Rules, and an automated data retention policy (e.g., deletion after 12 months or upon withdrawal via Cloud Functions) were employed to safeguard information and comply with regulations like GDPR. Users had control over their data, including rights to view, correct, or request deletion. In the application, retention is carried out by two Cloud Functions. A daily job deletes rides, reports, ratings, emergency alerts, and requests older than 12 months. A user can also delete their own account from Account Settings, which removes the login, uploaded documents, profile, and the records tied to that user; this is refused while the user has an active ride, so that a trip partner is never left stranded. Before anything is deleted, the Ride Token history is copied into an anonymous record that holds only the amount, status, and dates, so that aggregate research data survives without identifying anyone. The names, ratings, and vehicle details that the two riders see are removed from a completed ride 10 days after it ends, leaving only an anonymous ride record.
+    \item \rev{\textbf{Protecting Privacy and Confidentiality}: Data processing follows the Data Privacy Act of 2012 (Republic Act No. 10173) and its principles of transparency, legitimate purpose, and proportionality. The legal basis of each category of data is the consent of the participant (Table~\ref{tab:data}). Data from the Google Forms survey are managed with access restricted to the research team and are used only for the stated purpose. For the application, only essential data are collected (user IDs, the labels of the pickup and drop-off points and the timestamps of the rides, and Ride Token transactions; the precise GPS location is used in real time for matching and tracking only and is not stored, and the researchers cannot access raw GPS points). The data are pseudonymized: a unique identifier replaces the name in Firebase Firestore, and the contact details of a participant are kept in a separate file from the research data. Pseudonymized data are not anonymous, because pickup and drop-off points and timestamps can still point to a person. They are therefore accessible only to the researchers, and results are reported only in combined form. Firebase encrypts the data (AES-256 at rest and TLS 1.3 in transit) and Firebase Security Rules control access. Data gathered in the application during the UAT (accounts, uploaded verification documents, ride records, and system logs) are permanently deleted one (1) month after the testing ends, once the combined results without names have been prepared. Consent forms and survey responses are kept for three (3) years after the completion of the study and are then permanently deleted. The informed consent form states the same periods, and the automated retention functions of the application are set to them. A user can also ask for deletion at any time before the data are anonymized or combined into results. The details of retention, storage, access, and destruction are in Sections~\ref{sec:legal} to~\ref{sec:retention}.} \rev{In the application, the retention periods are carried out by Cloud Functions, which are set to the periods above and not to the earlier 12 months.} A user can also delete their own account from Account Settings, which removes the login, uploaded documents, profile, and the records tied to that user; this is refused while the user has an active ride, so that a trip partner is never left stranded. Before anything is deleted, the Ride Token history is copied into an anonymous record that holds only the amount, status, and dates, so that aggregate research data survives without identifying anyone. The names, ratings, and vehicle details that the two riders see are removed from a completed ride 10 days after it ends, leaving only an anonymous ride record.
 
 \end{enumerate}
+
+\subsection[Safety Protocol for the User Acceptance Testing]{\revh{Safety Protocol for the User Acceptance Testing}}\label{sec:uat-safety}
+\rev{\textit{Setting and approved points.} All UAT rides are made inside the USC-TC campus, in a controlled setting, and no off-campus activity is done, so the off-campus documentation under CMO No. 63, s. 2017 does not apply. The approved pickup and drop-off points are other campus buildings, such as SAFAD and SAS, approved by the administrators before the testing, and outbound rides start at the Bunzel building (Section~\ref{sec:routing}). Testing is done within the campus roads only, at campus speed limits.}
+
+\rev{\textit{Eligibility and vehicles.} Only drivers whose registration documents are verified by an administrator may offer rides: a valid driver's license, an OR/CR, a valid USC-TC Motor Vehicle Pass, and, for motorcycles, proof of a second helmet. Each driver uses one registered vehicle and may not carry more passengers than its capacity, which the application checks. Verification does not depend on the willingness of a student to drive.}
+
+\rev{\textit{Conditions.} Rides are not made during heavy rain, flooding, or other unsafe weather or traffic conditions. Drivers must not handle the phone while the vehicle is moving; the application is used only while the vehicle is stopped.}
+
+\rev{\textit{Safety briefing.} At the one-day onboarding, every participant is briefed on the approved points, the rules above, how to cancel or stop a ride, how to use the emergency button and what it does not do, and whom to contact. The ICF is also read and signed at this session.}
+
+\rev{\textit{Safety monitor and escalation.} Elisha Isabelle B. Tepait, one of the researchers, is the safety monitor during testing hours and keeps contact with the other researchers. A participant first stops the ride and reports to the safety monitor or through the application. The safety monitor then informs the other researchers and the adviser, and, when there is an injury or a threat, calls the campus security or the emergency hotline 911 and brings the participant to the University Clinic. The emergency button only alerts the administrators and records the event; it does not call anyone.}
+
+\rev{\textit{Stopping or suspending the testing.} A participant may decline, cancel, or stop any ride at any time, without penalty. The researchers suspend all rides when there is an injury, a harassment report, an unsafe-driving report, or when a safeguard in this section is missing, until the researchers and the adviser have reviewed the event. Actual-ride testing does not start until the Research Ethics Committee has reviewed these safety arrangements. If the safeguards cannot be provided, the rides are replaced by simulated or controlled testing, as in the beta testing.}
+
+\rev{\textit{Insurance and liability.} As advised by Mr. Alvin Salazar of the Vice President for Finance Office, the University provides accident insurance to all enrolled students, with 24-hour coverage of accidents, a maximum of \textpeso 25,000 per accident, and claims processed at the University Clinic. The researchers and the platform give immediate assistance but do not provide other insurance or compensation, and the participants sign the liability waiver of Section~\ref{sec:registration}.}
+
+\subsection[Risk Assessment]{\revh{Risk Assessment}}\label{sec:risk}
+\rev{Table~\ref{tab:risk} lists the foreseeable risks of the UAT to drivers, passengers, and other road users, the circumstances in which each can occur, its likelihood and potential severity, and how it is reduced. Likelihood and severity are the proponents' judgment (low, moderate, or high) for a one-week test inside the campus, and are not measured values.}
+
+\begin{footnotesize}
+\begin{longtable}{p{0.13\textwidth}p{0.14\textwidth}p{0.17\textwidth}p{0.10\textwidth}p{0.09\textwidth}p{0.27\textwidth}}
+\caption[Risk assessment of the user acceptance testing]{\revh{Risk assessment of the user acceptance testing}}\label{tab:risk}\\
+\hline
+\rowcolor{yellow}\textbf{Risk} & \textbf{Who} & \textbf{Circumstance} & \textbf{Likelihood} & \textbf{Severity} & \textbf{Mitigation} \\ \hline
+\endfirsthead
+\hline
+\rowcolor{yellow}\textbf{Risk} & \textbf{Who} & \textbf{Circumstance} & \textbf{Likelihood} & \textbf{Severity} & \textbf{Mitigation} \\ \hline
+\endhead
+\rowcolor{yellow}Physical: collision or injury (physical) & Drivers, passengers, pedestrians, other road users & Moving vehicle on campus roads, wet roads, busy hours & Low & High & Campus-only rides; campus speed limits; no testing in unsafe weather or traffic; verified drivers and vehicles; helmets; safety briefing; insurance \\ \hline
+\rowcolor{yellow}Driver distraction (physical) & Drivers, passengers, other road users & Handling the phone, prompts while moving & Low to moderate & High & Phone is not handled while the vehicle moves; requests are shown only when eligible (Section~\ref{sec:matching}); trip steps done while stopped \\ \hline
+\rowcolor{yellow}Motorcycle passenger injury (physical) & Passengers & Riding as a passenger on a motorcycle & Low & High & Second helmet required and checked at registration; passenger may decline \\ \hline
+\rowcolor{yellow}Harassment or conflict (psychological, social) & Drivers, passengers & Riding with a student not known before & Low & Moderate & Right to decline or stop; reporting in the application or to the safety monitor; rating system; removal from the study \\ \hline
+\rowcolor{yellow}Discomfort or loss of privacy in the vehicle (psychological) & Drivers, passengers & Conversations heard by the microphone & Low & Low & Driver-only microphone; the user can refuse the permission; short samples analyzed on the phone; no audio stored \\ \hline
+\rowcolor{yellow}Disclosure of travel patterns (privacy, social) & All participants & Pickup and drop-off points and times can identify a person & Low & Moderate & Raw GPS points are not stored and researchers cannot access them; pseudonymized identifiers; contact data kept separate; access limited to researchers; combined results only \\ \hline
+\rowcolor{yellow}Vehicle damage or cost (economic) & Drivers & Accident or fuel used during testing & Low & Moderate & Insurance for enrolled students; fuel cost is small inside the campus; no obligation to offer rides \\ \hline
+\rowcolor{yellow}Traffic violations or liability (legal) & Drivers & Breaking campus or traffic rules & Low & Moderate & Rules are briefed; the liability waiver is explained; the participant may withdraw at any time \\ \hline
+\rowcolor{yellow}Unequal pressure to join (social, academic) & CpE students & Researchers and advisers belong to the same department & Low & Moderate & Voluntary and no effect on grades; advisers do not select participants; open invitation to the department \\ \hline
+\end{longtable}
+\end{footnotesize}
+
+\subsection[Personal Data and Legal Basis]{\revh{Personal Data and Legal Basis}}\label{sec:legal}
+\rev{Table~\ref{tab:data} lists every category of personal data, the people it comes from, the purpose, the legal basis, where it is stored, and how long it is kept. The legal basis for all categories is the informed consent of the participant under the Data Privacy Act of 2012 (RA 10173). The enrollment documents are uploaded by the participants themselves with their consent, and the researchers do not access university records. The terms of the third-party services used (Firebase and Google Cloud, Google Forms, and the Google Maps Platform) are accepted by the researchers as service users.}
+
+\begin{footnotesize}
+\begin{longtable}{p{0.17\textwidth}p{0.14\textwidth}p{0.14\textwidth}p{0.27\textwidth}p{0.15\textwidth}}
+\caption[Categories of personal data, purpose, storage, and retention]{\revh{Categories of personal data, purpose, storage, and retention}}\label{tab:data}\\
+\hline
+\rowcolor{yellow}\textbf{Data} & \textbf{Data subjects} & \textbf{Purpose} & \textbf{Storage and protection} & \textbf{Retention} \\ \hline
+\endfirsthead
+\hline
+\rowcolor{yellow}\textbf{Data} & \textbf{Data subjects} & \textbf{Purpose} & \textbf{Storage and protection} & \textbf{Retention} \\ \hline
+\endhead
+\rowcolor{yellow}Name, USC email, year level, city, phone details, landmark, role, vehicle details (preliminary survey) & CpE students & Recruitment and selection & Google Forms on researchers' Google accounts with 2-step verification; contact details exported to a separate password-protected file & 3 years after the study, then deleted \\ \hline
+\rowcolor{yellow}Consent: online tick box, and signed paper form (UAT participants) & All participants; UAT participants & Proof of consent & Google Forms; signed forms scanned to PDF and kept in a closed folder; the paper copy is kept with it & 3 years after the study, then deleted and shredded \\ \hline
+\rowcolor{yellow}USC ID, study load; driver's license, OR/CR, MVP, helmet proof & UAT participants & Verification of eligibility & Firebase Cloud Storage; readable only by the participant and administrators; PDF, JPEG, or PNG up to 5 MB & 1 month after the testing ends, then deleted \\ \hline
+\rowcolor{yellow}Account profile and vehicle details & UAT participants & Operating the application & Firebase Firestore, pseudonymous ID, Security Rules, AES-256 at rest, TLS 1.3 in transit & 1 month after the testing ends, then deleted \\ \hline
+\rowcolor{yellow}Precise location (GPS) during an active ride & UAT participants & Ride matching and live tracking & Used in real time only; not stored, and researchers cannot access raw GPS points & Not retained \\ \hline
+\rowcolor{yellow}Ride history: labels of the pickup and drop-off points, timestamps, Ride Token records & UAT participants & Token computation and evaluation & Firebase Firestore, pseudonymous ID; names and vehicle details removed from the ride record 10 days after completion; the anonymous token record (amount, status, dates) is kept for the results & 1 month after the testing ends, then deleted \\ \hline
+\rowcolor{yellow}Microphone audio sample (drivers) & Student-drivers & Mood classification & Processed in the phone and not stored or sent; only the mood label is used & Not retained \\ \hline
+\rowcolor{yellow}Feedback responses (tester code) & Beta testers; UAT participants & Evaluation of the application & Google Forms, no names or emails; exported to a password-protected file & 3 years after the study, then deleted \\ \hline
+\rowcolor{yellow}System and access logs; incident log & Researchers; participants in an incident & Security and safety follow-up & Firebase and Google Cloud logs; incident log with code, date, and short description only & Logs: 1 month after the testing ends; incident log: 3 years after the study; then deleted \\ \hline
+\end{longtable}
+\end{footnotesize}
+
+\subsection[Data Flow, Storage, and Access]{\revh{Data Flow, Storage, and Access}}\label{sec:dataflow}
+\rev{\textit{Data flow and monitoring.} Figure~\ref{fig:dataflow} shows what is sent, to whom, and where it is processed. Data move only between the participant's phone, Firebase (Authentication, Firestore, Cloud Storage, and Cloud Functions), the Google Maps Platform (route and place requests), and Google Forms (surveys), and are viewed by the researchers through the administrator screens and Google accounts. Access to the Firebase project and to the Google Forms is logged by the platforms, and the researchers review the access logs every week during the testing. Data are shared with no one outside the research team and the service providers above. In case of unauthorized disclosure, the researchers stop the access, inform the adviser and the Research Ethics Committee, and inform the affected participants.}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{images/dataflow.png}
+\caption[Data flow of the SanCarGo study]{\revh{Data flow of the SanCarGo study}}\label{fig:dataflow}
+\end{figure}
+
+\rev{\textit{Storage.} Digital research data are stored in Firebase (Google Cloud) and in the researchers' Google accounts, and downloaded files are kept only in a closed, password-protected folder on the researchers' laptops, which are locked with a password and are not shared. No identifiable research data are kept on removable media such as memory sticks. Backups are made only inside the same accounts. Credentials and encryption keys are kept out of the source code and are restricted to the researchers. Local copies in the phones of the participants (the application cache) are cleared at the end of the testing. Signed paper forms are scanned and kept in a closed folder.}
+
+\rev{\textit{Access.} Table~\ref{tab:access} shows who may access what. Permissions follow the least-privilege principle, administrator accounts are protected by multi-factor sign-in, and the access logs are reviewed as stated above.}
+
+\begin{footnotesize}
+\begin{longtable}{p{0.22\textwidth}p{0.62\textwidth}}
+\caption[Access-control matrix]{\revh{Access-control matrix}}\label{tab:access}\\
+\hline
+\rowcolor{yellow}\textbf{Role} & \textbf{Access} \\ \hline
+\endfirsthead
+\hline
+\rowcolor{yellow}\textbf{Role} & \textbf{Access} \\ \hline
+\endhead
+\rowcolor{yellow}Participant & Own account, own documents, own rides \\ \hline
+\rowcolor{yellow}Researchers (3) & Pseudonymized research data; documents for verification; the key linking codes to names \\ \hline
+\rowcolor{yellow}Advisers & Coded or combined results only; no identifiable records \\ \hline
+\rowcolor{yellow}Administrators (researchers) & Approval of registrations, reports, and logs, through the admin screens \\ \hline
+\rowcolor{yellow}Others & No access \\ \hline
+\end{longtable}
+\end{footnotesize}
+
+\subsection[Incidental Findings and Safety Incidents]{\revh{Incidental Findings and Safety Incidents}}\label{sec:incidental}
+\rev{An incidental finding is information that appears during the testing without being a purpose of the study, such as a report of unsafe driving, harassment, an accident, or an accidental disclosure of sensitive information. The safety monitor assesses it first, and escalates it to the other researchers and the adviser when there is an injury, a threat, harassment, or a legal issue. Each incident is written in an incident log with only the participant code, the date, and a short description, and no unrelated personal information is collected. Participants are told about this in the informed consent form.}
+
+\subsection[Retention and Destruction]{\revh{Retention and Destruction}}\label{sec:retention}
+\rev{Retention follows one schedule for each category of data (Table~\ref{tab:data}). Data gathered in the application during the UAT (accounts, uploaded verification documents, ride records, and system logs) are deleted one (1) month after the testing ends, once the combined results without names have been prepared; the precise GPS location is never stored. Consent forms, survey responses (preliminary and feedback), and the incident log are kept for three (3) years after the completion of the study as proof of consent and for the study records, and are then deleted. The combined results are part of the thesis and contain no names. At each deletion date, Jon Gil A. Ramas, as the responsible researcher, deletes the Firebase data, the Google Forms responses, the downloaded files, the local copies, and the backups of that category, and shreds the paper copies; a second researcher checks the deletion and signs a destruction log. When a participant withdraws, his or her data are deleted on request, including the copies above, except for data that were already irreversibly anonymized or combined into results, which can no longer be taken out. This limit is stated in the informed consent form.}
 
 \section{Testing Plan} 
 \subsection{Preliminary Survey (Baseline Data Collection)}
@@ -1114,7 +1208,7 @@ These requirements aim to create a trusted, school-exclusive ridesharing environ
 \begin{itemize}
     \item \textbf{Location.} The city where the student primarily lives in the first semester of A.Y. 2026--2027 (Cebu City, Mandaue City, Lapu-Lapu City, Talisay City, or another place), and the nearest major landmark to where the student starts his or her daily commute. Respondents are told not to enter an exact house number or street address. The landmarks help the proponents choose pick-up and drop-off zones.
     \item \textbf{Devices.} The operating system of the student's phone (iOS, Android, or both), the phone model, and the network carriers used for mobile data. These show which platforms and network conditions the application must work on.
-    \item \textbf{Interest in user acceptance testing.} Whether the student wants to be a pilot tester for two weeks, and the role he or she wants to take (both driver and passenger, or passenger only). A note on the form states that only student-drivers can earn CES points.
+    \item \textbf{Interest in user acceptance testing.} Whether the student wants to be a pilot tester for \rev{one week}, and the role he or she wants to take (both driver and passenger, or passenger only). A note on the form states that only student-drivers can earn CES points.
     \item \textbf{Vehicle (for students who choose the driver role).} Whether the vehicle with the USC Motor Vehicle Pass sticker is a car or a motorcycle. The study is limited to one registered vehicle per student-driver. Car drivers state the fuel type, since only gasoline-powered and diesel-powered vehicles are accepted, and the Ride Token computation uses the fuel price. Motorcycle drivers state whether they have a spare helmet to lend to a passenger.
 \end{itemize}
 
@@ -1127,7 +1221,7 @@ The survey is sent to all enrolled Computer Engineering students ($N = 378$). Th
     n_0 = \frac{z^2\, p\,(1-p)}{e^2} \approx 384.16, \qquad
     n = \frac{n_0}{1 + \frac{n_0 - 1}{N}} \approx 190.8 \;\Rightarrow\; 191 \text{ responses.}
 \end{equation}
-Respondents receive CES points or an entry in a raffle as an incentive for completing the survey.
+\rev{Survey respondents who are not selected do not receive an incentive. The incentives of the selected participants are described in Section~\ref{sec:phases}.}
 
 \subsection{Testing Phases}
 \label{sec:phases}
@@ -1146,7 +1240,7 @@ Testing is carried out in four phases. The first two phases are referred to as a
         1. Unit testing (alpha) & Ride matching, Ride Token system, and API integration & Objectives 2 and 3 \\
         2. System testing (alpha) & The whole app together: two emulators, the admin side, and the live backend & Objective 1 \\
         3. Beta testing & 12 volunteer testers use the application on 10 physical iOS and Android devices (rides are played on emulators), followed by the feedback survey & Objective 1 \\
-        4. User acceptance testing (UAT) & 60 Computer Engineering students install the application (Android through Firebase App Distribution, iOS through Xcode) and use it on physical devices (Android or iOS), followed by the feedback survey & Objective 4 \\
+        4. User acceptance testing (UAT) & \rev{Up to 60 Computer Engineering students use the application for one week, inside the campus only, on physical devices (Android through Firebase App Distribution, iOS through Xcode), followed by the feedback survey} & Objective 4 \\
         \hline
     \end{tabular}
 \end{table}
@@ -1277,7 +1371,17 @@ Emulator-played rides have limits. They do not show how real GPS drifts on a mov
 \end{table}
 
 \subsubsection{Phase 4: User Acceptance Testing}
-UAT evaluates the application in real use. Up to 60 Computer Engineering students take part, with Years 1 to 3 prioritized. The number is set by the proponents' capacity to supervise testing and by the number of participants needed for rides to match (for example, enough drivers and passengers at the same time), rather than by a formula. UAT runs for at least two weeks, and it is conducted only after REC approval. Student-driver participants are rewarded with CES points through a CES project proposal, which the USC Community Extension Services (CES) Office has fully approved. Student-driver participants must have a valid driver’s license and a valid USC campus vehicle sticker, and motorcycle drivers must also show proof of a second helmet. Ride Tokens earned during UAT are not converted to CES points; once the application is live, tokens convert to CES points as described in Section~\ref{sec:tokens}. All UAT participants also join a raffle (a single prize drawing, with the GCash prize amount announced at onboarding). UAT uses the same feedback survey as beta testing (Section~\ref{sec:survey}) and is judged mainly on its usability and perception questions, which are non-functional.
+\rev{UAT evaluates the application in real use. Up to 60 Computer Engineering students take part, with Years 1 to 3 prioritized because they are on campus more days of the week, which makes matching and supervision possible; students of any year level may be selected, and the choice has no effect on grades. The number is set by the capacity of the proponents to supervise the testing and by the number of participants needed for rides to match (for example, about 15 drivers with about 3 passengers each), and not by a formula. UAT lasts one week, is held inside the USC-TC campus only (Section~\ref{sec:routing}), and is conducted only after REC approval.}
+
+\rev{\textit{Why actual rides are needed.} The beta testing in Phase 3 plays the rides on emulators, and it cannot show how the real GPS position drifts on a moving vehicle, how the battery and heat behave, whether live tracking continues when the phone is in a pocket, how the driver's microphone hears the cabin of a real vehicle, or how real students perceive the application when they actually offer and take a ride. These are the questions of Objective 4, and acceptance testing means that end users check the application in realistic scenarios~\cite{gfgacceptance}. The risks of real rides are real as well (Section~\ref{sec:lit-risks}), and so the UAT follows the emulator tests and the system tests, is limited to one week inside the campus, and is covered by the safety protocol and risk assessment of Sections~\ref{sec:uat-safety} and~\ref{sec:risk}.}
+
+\rev{\textit{Eligibility and exclusion.} Both roles: a student currently enrolled in the BS Computer Engineering program of USC-TC, at least 18 years old, who answered the preliminary survey and gave informed consent, owns an Android or iOS phone, and uploaded a USC ID and study load that an administrator verified. Drivers also need a valid driver's license, a valid USC campus vehicle sticker (Motor Vehicle Pass), a registered vehicle, and, for motorcycles, proof of a second helmet. Passengers have no vehicle requirement. A student is excluded if he or she is not enrolled in Computer Engineering, is under 18, cannot provide the documents, or has withdrawn consent. The eligibility of a driver is checked by an administrator from the documents, and is separate from whether the student is willing to drive. When more eligible volunteers apply than the ceiling of 60, the participants are chosen from the Years 1 to 3 first, and then from the other year levels, so that drivers and passengers can be matched.}
+
+\rev{\textit{Voluntariness.} Participation is voluntary. No student is disadvantaged academically or institutionally for declining or withdrawing. The adviser and assistant adviser do not teach or advise any prospective participant, do not take part in selecting participants, and do not see the responses with names. All participants are competent adults, so the procedures for vulnerable populations are not applicable.}
+
+\rev{\textit{Duration.} The preliminary survey takes about 3 minutes. The UAT takes about ten days in total: a one-day onboarding and safety briefing, one week of use inside the campus, and a feedback survey of about 5 to 10 minutes within 24 to 48 hours after the week. The optional project-checking demonstration (Section~\ref{sec:checking}) may take additional time.}
+
+\rev{\textit{Incentives and benefits.} Student-driver participants are rewarded with CES points for their rideshare service through the CES project proposal ``SanCarGo User Acceptance Testing: A Student Ridesharing Service for the USC Community'' (CES PPA Control No. CES2026-1SA-050), which the USC Community Extension Services (CES) Office approved on October 26, 2026 (Appendix~\ref{app:ces}). Student-passengers get a free ride to or from the campus buildings used in the testing. The CES points are separate from the course grade. Ride Tokens earned during UAT are not converted to CES points; once the application is live, tokens convert to CES points as described in Section~\ref{sec:tokens}. All UAT participants also join a raffle (a single prize drawing, with the GCash prize amount announced at onboarding), and early withdrawal makes a participant ineligible for the raffle. No fuel allowance or travel reimbursement is given. UAT uses the same feedback survey as beta testing (Section~\ref{sec:survey}) and is judged mainly on its usability and perception questions, which are non-functional.}
 
 \paragraph{Distribution of the application.}\label{sec:distribution}
 Android builds are released to the UAT participants through Firebase App Distribution, a free service of Firebase that delivers pre-release builds to a list of invited testers. The earlier Kapiot project released its alpha build through the same service~\cite{pepito2022}. It was chosen for three reasons. First, the application needs no app store listing or review, so the proponents can release a build as soon as it is ready. Second, only the people the proponents invite can install it, which keeps the pre-release version limited to the UAT participants who gave their consent. Third, the Firebase tools are already part of the project (Section~\ref{sec:tools}), so no new account or service is needed. iOS builds are not released this way; they are installed from Xcode during onboarding (Section~\ref{sec:install}).
@@ -1352,8 +1456,8 @@ where $x_i$ is the answer to statement $i$. The scores are averaged over the tes
 After the survey closes, the proponents read every Fail comment, group the repeated ones, and give each real problem a severity (Critical, Major, Minor, or Cosmetic, as defined in Section~\ref{sec:phases}).
 
 
-\section{Project Checking Strategy}
-\indent Following the panelists' instruction, the project checking is a live demonstration of actual on-road activity (pickup, driving, and drop-off at the campus) with the participants physically present, so the proponents and panelists can observe system behavior, user interaction, and backend updates concurrently. The participants are drawn from the UAT participants rather than from a separately recruited group. The project checking is scheduled between November 30 and December 4, 2026, in one of the Computer Engineering classrooms or laboratories on the second floor of the Bunzel building. The route of the demonstration is built around Oakridge, which is the pick-up point of the inbound trip.
+\section{Project Checking Strategy}\label{sec:checking}
+\indent \rev{Following the panelists' instruction, the project checking is a live demonstration of actual ride activity (pickup, driving, and drop-off) with the participants physically present, so the proponents and panelists can observe system behavior, user interaction, and backend updates concurrently. All of it is done inside the USC-TC campus. The participants are drawn from the UAT participants rather than from a separately recruited group. The project checking is scheduled between November 30 and December 4, 2026, in one of the Computer Engineering classrooms or laboratories on the second floor of the Bunzel building, and it follows the safety protocol of Section~\ref{sec:uat-safety} and takes place only after the Research Ethics Committee has reviewed the safety arrangements. The pickup and drop-off places of the demonstration are campus buildings: the inbound trip is built around SAS, which is the pickup point of the inbound trip, and the outbound trip starts at the Bunzel building and ends at SAFAD and SAS.}
 
 \indent The demonstration followed the structured roles below:
 \begin{itemize}
@@ -1365,28 +1469,28 @@ After the survey closes, the proponents read every Fail comment, group the repea
 \vspace{1em}
 \indent The simulation was divided into two major trip scenarios:
 
-\subsection{Inbound Trip (iOS – Driver A)}
+\subsection[Inbound Trip (iOS -- Driver A)]{\revh{Inbound Trip (iOS -- Driver A)}}
 \vspace{1em}
     \begin{enumerate}
-        \item Driver A starts at Metro Supermarket, A.S. Fortuna, and initiates a rideshare trip using an Apple device.
-        \item During the trip, Driver A intentionally deviates from the assigned route.
-        \item The app triggers automatic rerouting through Google Maps.
-        \item The AI model activates and classifies the vehicle’s audio environment as “Lively”.
-        \item The system matches Driver A with Passenger A, whose mood preference is also Lively.
-        \item Driver A picks up Passenger A in Oakridge.
-        \item Passenger B, who prefers Chill, is not matched with the Lively driver, so the request stays unmatched. After waiting about two minutes, Passenger B is prompted to change their mood preference and chooses Lively (Section~\ref{sec:moodmatch}). Driver A can then see the request and picks up Passenger B in Sto. Niño Village.
-        \item The driver completes the trip, arriving at USC Talamban Campus with both passengers.
+        \item \rev{Driver A starts at SAFAD, which is outside the Bunzel geofence, and initiates a rideshare trip using an Apple device.}
+        \item \rev{During the trip, Driver A intentionally deviates from the assigned route, using the campus roads only.}
+        \item \rev{The app triggers automatic rerouting through Google Maps.}
+        \item \rev{The AI model activates and classifies the vehicle's audio environment as ``Lively''.}
+        \item \rev{The system matches Driver A with Passenger A, whose mood preference is also Lively.}
+        \item \rev{Driver A picks up Passenger A at SAS.}
+        \item \rev{Passenger B, who prefers Chill, is not matched with the Lively driver, so the request stays unmatched. After waiting about two minutes, Passenger B is prompted to change the mood preference and chooses Lively (Section~\ref{sec:moodmatch}). Driver A can then see the request and picks up Passenger B at SAS.}
+        \item \rev{The driver completes the trip, arriving at the Bunzel building with both passengers.}
     \end{enumerate}
 
-\subsection{Outbound Trip (Android – Driver B)}
+\subsection[Outbound Trip (Android -- Driver B)]{\revh{Outbound Trip (Android -- Driver B)}}
 \vspace{1em}
     \begin{enumerate}
-        \item Driver B starts at school, USC-TC, and initiates an outbound rideshare trip using an Android device.
-        \item The AI model activates and detects a “Chill” mood classification.
-        \item Driver B is matched with Passenger C, who prefers Chill, and proceeds to pick them up in the Bunzel lobby in USC-TC.
-        \item The system detects no match with Passenger D, who has no stated preference and whose destination is not aligned with Driver B’s route.
-        \item Passenger D is also picked up in the Bunzel lobby, to test ride inclusion logic.
-        \item Driver B completes the ride by dropping off Passenger C at Gaisano Country Mall and then Passenger D across Shell Banilad.
+        \item \rev{Driver B starts at the Bunzel building, inside the geofence, and initiates an outbound rideshare trip using an Android device.}
+        \item \rev{The AI model activates and detects a ``Chill'' mood classification.}
+        \item \rev{Driver B is matched with Passenger C, who prefers Chill and is waiting in the Bunzel building, and picks Passenger C up there.}
+        \item \rev{The system detects no match with Passenger D, who has no stated preference and whose destination is not aligned with the route of Driver B.}
+        \item \rev{Passenger D is also picked up in the Bunzel building, to test the ride inclusion logic.}
+        \item \rev{Driver B completes the ride by dropping off Passenger C at SAFAD and then Passenger D at SAS.}
     \end{enumerate}
 
 \indent This structured testing process ensured all key system components—registration flows, admin controls, routing and rerouting mechanisms, AI-based mood classification, and match compatibility—were executed in observable and verifiable conditions. The test also provided a qualitative basis for evaluating the app’s tolerance for imperfect match cases and real-world variability.
