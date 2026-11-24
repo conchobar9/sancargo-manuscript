@@ -1,0 +1,79 @@
+% REC appendices A to G (attached pages carry the page number)
+\newcommand{\attachpdf}[3][]{%
+  \IfFileExists{#2}{%
+    \includepdf[pages=-,pagecommand={\thispagestyle{attached}},scale=0.9,offset=0 0.5cm,#1]{#2}%
+  }{%
+    \clearpage
+    \thispagestyle{attached}
+    \vspace*{0.25\textheight}
+    \begin{center}
+      \fbox{\parbox{0.8\textwidth}{\centering\vspace{6pt}
+        \textbf{TO BE INSERTED}\\[4pt]
+        #3\\[4pt]
+        \small Add the signed PDF to the project as \texttt{\detokenize{#2}} and recompile.
+        \vspace{6pt}}}
+    \end{center}
+    \clearpage
+  }%
+}
+
+\chapter{Informed Consent Form}\label{app:icf}
+\noindent This appendix contains the Informed Consent Form (ICF) of the study (version 2/23Nov2026). The same form is used in three ways:
+\begin{itemize}[leftmargin=*]
+  \item as the first sections of the online preliminary survey, where respondents tick a box to consent;
+  \item as the first sections of the online feedback form for beta testers and User Acceptance Testing (UAT) participants, with a tick box; and
+  \item as the printed form, with Part II signed at the onboarding session, by the participants selected for the UAT.
+\end{itemize}
+\attachpdf{pdfs/AppA_ICF.pdf}{Informed Consent Form}
+
+\chapter{Research Instruments}\label{app:instruments}
+\noindent This appendix describes the instruments of the study and reproduces their items:
+\begin{itemize}[leftmargin=*]
+  \item the preliminary survey (researcher-developed);
+  \item the test cases, task results (researcher-developed);
+  \item the System Usability Scale (adopted from Brooke, 1996, with the product name substituted);
+  \item the experience statements (researcher-developed); and
+  \item the open-ended and follow-up questions (researcher-developed).
+\end{itemize}
+\attachpdf{pdfs/AppB_Research_Instruments.pdf}{Research Instruments}
+
+\chapter{Screenshots of the Online Forms}\label{app:forms}
+\noindent Both instruments are administered through Google Forms. The first sections of each form are the Informed Consent Form (cover, Part I information sheet, and Part II certificate of consent).
+\vspace{6pt}
+
+\noindent\textbf{C.1 Preliminary Survey}\\
+Live link: \url{https://forms.gle/GqD58cPgPzn7FDPt6}
+
+\vspace{6pt}
+\noindent\textbf{C.2 Feedback Form (Beta Testers and UAT Participants)}\\
+Live link: \url{https://forms.gle/cSNs7w3zmgxFx6xF7}
+
+\vspace{6pt}
+\noindent The screenshots of C.1 follow first, then those of C.2.
+\attachpdf[landscape]{pdfs/AppC_Preliminary_Survey.pdf}{Screenshots of the preliminary survey}
+\attachpdf[landscape]{pdfs/AppC_Feedback_Survey.pdf}{Screenshots of the feedback form}
+
+\chapter{Other Supporting Documents}\label{app:other}
+\noindent This appendix contains the following supporting documents:
+\begin{itemize}[leftmargin=*]
+  \item D.1 Free-use notice of the System Usability Scale (Brooke, 1996)
+  \item D.2 Signed Approval Sheet of the Proposal Hearing
+\end{itemize}
+\attachpdf{pdfs/AppD_SUS_Free_Use_Notice.pdf}{D.1 Free-use notice of the System Usability Scale}
+\attachpdf{pdfs/AppD2_Approval_Sheet.pdf}{D.2 Signed Approval Sheet of the Proposal Hearing}
+
+\chapter{Curricula Vitae of the Researchers}\label{app:cvres}
+\noindent The curricula vitae of the three researchers follow: Brian L. de la Torre, Jon Gil A. Ramas, and Elisha Isabelle B. Tepait.
+\attachpdf{pdfs/AppE1_de_la_Torre_CV.pdf}{Signed and dated CV of Brian L. de la Torre}
+\attachpdf{pdfs/AppE2_Ramas_CV.pdf}{Signed and dated CV of Jon Gil A. Ramas}
+\attachpdf{pdfs/AppE3_Tepait_CV.pdf}{Signed and dated CV of Elisha Isabelle B. Tepait}
+
+\chapter{Curricula Vitae of the Advisers}\label{app:cvadv}
+\noindent The curricula vitae of the thesis adviser, Dr. Antoniette M. Ca\~nete, and the assistant thesis adviser, Engr. Aion Christoff Ernst D. D'Silva, follow.
+\attachpdf{pdfs/AppF_Canete_CV_signed.pdf}{Signed and dated CV of Dr. Antoniette M. Ca\~nete}
+\attachpdf{pdfs/AppF2_DSilva_CV_signed.pdf}{Signed and dated CV of Engr. Aion Christoff Ernst D. D'Silva}
+
+\chapter{Approved CES Project Proposal (CES Form A)}\label{app:ces}
+\noindent This appendix contains the approved USC-CES Form A (PPA Proposal) of the study, ``SanCarGo User Acceptance Testing: A Student Ridesharing Service for the USC Community'', CES PPA Control No. CES2026-1SA-050, approved on October 26, 2026. Under this proposal, student-drivers who take part in the User Acceptance Testing are rewarded with CES points for their rideshare service.
+\attachpdf{pdfs/AppG_CES_Form_A_Approved.pdf}{Approved CES Form A}
+\clearpage
