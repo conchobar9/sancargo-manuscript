@@ -2,7 +2,7 @@
 
 \section{Conceptual Framework}
 
-SanCarGo is a mobile ridesharing system designed to connect student-drivers and student-passengers traveling to or from the Bunzel Building at the University of San Carlos Talamban Campus (USC-TC). The system uses the user’s location, trip direction, selected ride points, available vehicle capacity, and vehicle preference to support route planning and ride-request processing. Its outputs include a displayed route, ride-request status, match information, and trip updates.
+SanCarGo is a mobile ridesharing system designed to connect student-drivers and student-passengers traveling to or from the Bunzel Building at the University of San Carlos Talamban Campus (USC-TC). The system uses the user’s location, trip direction, selected ride points, available vehicle capacity, and the passenger's mood and vehicle preferences to support route planning and ride-request processing. Its outputs include a displayed route, ride-request status, match information, and trip updates.
 
 The application was developed using Flutter for Android and iOS. Firebase Authentication manages user sign-in, while administrative approval and role-based checks govern access to ride functions. Cloud Firestore stores application data, including user profiles, ride requests, driver availability, and ride records. Firebase Cloud Functions perform server-side operations such as creating requests and accepting rides. Google Maps displays locations and routes, while routing services provide route geometry and travel estimates.
 
@@ -14,6 +14,12 @@ The system was designed to accommodate routes and ride points beyond USC-TC. How
     \caption{Conceptual Framework}
     \label{fig:conceptual}
 \end{figure}
+
+An additional layer of personalization is introduced through a Mood-Based AI system. This system classifies the in-car music environment into categories like Lively, Chill, or Quiet using on-device audio feature extraction and a lightweight machine learning model. Passengers indicate the moods they accept when they request a ride, and the system incorporates this input during the driver-passenger matching process. This enhances comfort, improves rider satisfaction, and supports better ride experience alignment.
+
+The Ride Token and CES point system (Section~\ref{sec:tokens}) rewards student drivers for completed rides with non-monetary incentives, fostering engagement and volunteerism.
+
+For real-time communication, Firebase Cloud Messaging facilitates immediate and reliable exchange of information between riders and drivers, such as ride requests and acceptance confirmations.
 
 
 \section{System Features}
@@ -28,8 +34,10 @@ SanCarGo provides features for requesting, coordinating, and monitoring shared r
     \item \textbf{Notifications and chat}: The application provides push notifications for selected ride events and an in-app communication channel for matched users. Availability depends on device configuration and connectivity.
     \item \textbf{Destination selection and early drop-off}: For an outbound trip, the driver can select a destination through place search or a map pin. A passenger may request an early drop-off for the driver to confirm.
     \item \textbf{Ride history, feedback, and reports}: Users can review ride records and submit ratings or reports through the application.
+    \item \textbf{Mood-based matching}: Passengers choose the moods they accept, and the driver's phone classifies the music in the car as Lively, Chill, or Quiet (Section~\ref{sec:ai}). The mood is applied as a filter when a driver accepts a request.
+    \item \textbf{Ride Tokens and CES points}: For student drivers, the system tracks accumulated Ride Tokens and converts them into CES points (Section~\ref{sec:tokens}), which rewards their contribution to shared transportation.
     \item \textbf{Emergency alert}: The application provides an alert that records the event and notifies administrators. It should not be described as a direct connection to emergency responders.
-    \item \textbf{Account verification and administration}: Registration requires verification and administrative review. Administrators can review registrations, manage users and ride points, and examine reports and ride records.
+    \item \textbf{Account verification and administration}: Registration requires verification and administrative review. Administrators can review registrations, manage users and ride points, review Ride Token claims, set the fuel price and semester period that drive the Ride Token system, and examine reports and ride records.
     \item \textbf{Connectivity and error handling}: The application indicates loss of connectivity and records supported errors through Firebase Crashlytics. Server-dependent actions, including request creation and acceptance, require a connection.
 \end{itemize}
 These features support ride coordination and administrative oversight. Their presence alone does not establish improved safety, reduced emissions, or reduced travel costs; such outcomes require separate evidence.
@@ -37,11 +45,52 @@ These features support ride coordination and administrative oversight. Their pre
 
 \section{User Roles}
 
-SanCarGo defines three principal user roles: passenger, driver, and administrator. Access to functions and data is governed by authentication, approval status, role checks, and the applicable Firebase Security Rules.
+SanCarGo defines three principal user roles: passenger, driver, and administrator. Access to functions and data is governed by authentication, approval status, role checks, and the applicable Firebase Security Rules. Table~\ref{tab: user roles} shows the features each role can access, and Figure~\ref{fig: use case} shows the use cases.
 
-Passenger. A passenger can submit a ride request, select an available ride point and vehicle preference, monitor the request, view the matched driver’s location during the trip, communicate with the driver, and provide feedback or submit a report.
+{
+\renewcommand{\arraystretch}{1.25}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{6.2cm}|c|c|c|}
+\caption{User Types and their Feature Access}\label{tab: user roles}\\
+\hline
+\textbf{Feature} & \textbf{Passenger} & \textbf{Driver} & \textbf{Admin} \\
+\hline
+\endfirsthead
+\multicolumn{4}{l}{\small\textit{Table 3.1 (continued)}}\\
+\hline
+\textbf{Feature} & \textbf{Passenger} & \textbf{Driver} & \textbf{Admin} \\
+\hline
+\endhead
+\hline
+\endfoot
+User Registration and Login  & \cmark & \cmark & \cmark \\ 
+        USC Email Verification  & \cmark & \cmark & \cmark \\ 
+        Profile Management  & \cmark & \cmark & \cmark \\ 
+        Request a Ride  & \cmark & \xmark & \xmark \\ 
+        Accept/Reject Ride Requests  & \xmark & \cmark & \xmark \\ 
+        Notification of Match  & \cmark & \cmark & \xmark \\ 
+        Live Ride Tracking & \cmark & \cmark & \xmark \\ 
+        Navigation Assistance (Google Maps API) & \cmark & \cmark & \xmark \\ 
+        Ride Token Earning System & \xmark & \cmark & \xmark \\ 
+        Ride Review and Rating & \cmark & \cmark & \xmark \\  
+        In-App Chat with Matched User & \cmark & \cmark & \xmark \\ 
+        Emergency Alert Button & \cmark & \cmark & \xmark \\ 
+        Mood Preference Selection & \cmark & \xmark & \xmark \\ 
+        AI Mood Detection (Music-Based) & \xmark & \cmark & \xmark \\ 
+        Mood-Based Matching System & \cmark & \cmark & \xmark \\ 
+        
+        Approve/Deny Registrations & \xmark & \xmark & \cmark \\ 
+        Manage Rides and Users & \xmark & \xmark & \cmark \\ 
+        Review Ride Token Claims & \xmark & \xmark & \cmark \\ 
+        Manage Ride Points, Fuel Price, and Semester Period & \xmark & \xmark & \cmark \\ 
+        View Ride Logs and Transaction History & \cmark & \cmark & \cmark \\ 
+        Suspend/Remove Users & \xmark & \xmark & \cmark \\ 
+        Generate User Reports & \xmark & \xmark & \cmark \\
+\end{longtable}
+}
 
-Driver. An approved driver can specify availability and passenger capacity, select an outbound destination when applicable, view eligible requests, accept requests, and manage pickup and trip completion. A driver can also communicate with matched passengers and submit feedback or reports.
+Passenger. A passenger can submit a ride request, select an available ride point, the moods they accept, and a vehicle preference, monitor the request, view the matched driver’s location during the trip, communicate with the driver, and provide feedback or submit a report.
+
+Driver. An approved driver can specify availability and passenger capacity, select an outbound destination when applicable, view eligible requests, accept requests, and manage pickup and trip completion. A driver can earn Ride Tokens for completed rides and can also communicate with matched passengers and submit feedback or reports.
 
 Administrator. An administrator reviews registration submissions and supporting documents, manages users and approved ride points, and reviews operational records and reports. Administrative permissions allow access to information needed for these tasks and should be restricted to authorized accounts.
 
@@ -58,18 +107,47 @@ A role-based design limits access according to the operation and record involved
 \label{sec:tools}
 
 SanCarGo follows a client-server architecture. The Flutter mobile application provides the user interface, location and map interactions, while Firebase services support authentication, data storage, server-side processing, and notifications.
-\begin{itemize}
-    \item Flutter and Dart provide the mobile application and interface for Android and iOS.
-    \item Firebase Authentication manages user authentication and email verification.
-    \item Cloud Firestore stores and synchronizes application data such as profiles, requests, availability, and ride records.
-    \item Firebase Cloud Functions implement server-side operations, including trip classification, ride-request creation, ride acceptance, route requests, and selected maintenance tasks.
-    \item Firebase Security Rules and Cloud Storage restrict access to Firestore records and uploaded registration documents.
-    \item Google Maps SDK displays maps, markers, and route geometry in the application.
-    \item \textbf{Google Routes API supplies route information through the \texttt{computeRouteAsia} Cloud Function}: The application uses OSRM as a fallback when the primary route request fails.
-    \item Google Places API supports typed destination search through server-side functions; the driver can also choose a destination using a map pin.
-    \item Firebase Cloud Messaging delivers supported push notifications, while Firebase Crashlytics records supported application errors.
-    \item The Flutter location and connectivity packages support location updates and an indication of network connectivity.
-\end{itemize}
+Table~\ref{tab: tools} lists the tools and technologies used.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Development Tools and Technologies}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.20\textwidth}|>{\raggedright\arraybackslash}p{0.26\textwidth}|>{\raggedright\arraybackslash}p{0.45\textwidth}|}
+        \hline
+        \textbf{Component} & \textbf{Technology Used} & \textbf{Justification} \\ 
+        \hline
+        Frontend & Flutter (Dart) & Cross-platform development (iOS \& Android) \\ 
+        
+        Backend & Firebase Firestore & Stores ride requests, user information, location data, tokens, weekly fuel price data, and route history in real-time. \\ 
+
+        Authentication & Firebase Auth & Secure login with USC email verification \\ 
+        
+        Mapping \& GPS & Google Maps SDK; Google Routes API (through a Cloud Function), with OSRM as fallback; Google Places API (New) & Map display and location tracking on the device; route geometry, distance, and duration computed on the server so the API key stays out of the app; typed destination search. \\ 
+        
+        Proximity Detection \& Matching & Firebase Cloud Functions & Classify trip direction, create ride requests, perform the server-side checks when a driver accepts a request, calculate Ride Tokens, and refresh the fuel price. \\ 
+
+        Notifications & Firebase Cloud Messaging & Push alerts for requests, ride status, chat messages, and administrator decisions. \\ 
+
+        Reliability \& Security & Firebase Crashlytics, connectivity\_plus, Firebase App Check, Firebase Security Rules & Crash reporting, offline indicator, app verification, and role-based access to data and uploaded documents. \\ 
+        
+        Mood-Based AI System & TensorFlow Lite + Firebase + Librosa & Classifies music environment in the driver’s car (Lively, Chill, Quiet) using audio features and a CNN model. Matching is improved by aligning driver mood with rider preference. \\ 
+        
+        Audio Processing & Librosa (Google Colab, training) and an equivalent Dart feature extractor (on-device) & Extracts the audio features (40 MFCCs, RMS energy and onset strength) used to train the CNN and, on the device, to classify the ride audio in real time. \\      
+        
+        Model Deployment & TensorFlow Lite (model bundled with the app) & Allows lightweight, on-device inference for real-time classification. The model ships inside the application, so updating it requires an app update. \\ 
+
+                Pre-release Distribution & Firebase App Distribution & Delivers Android test builds to invited UAT testers by email, without an app store listing (Section~\ref{sec:distribution}). Android Studio and Xcode build and install the Android and iOS apps directly on testing devices (Section~\ref{sec:install}). \\
+
+        \hline
+    \end{tabular}
+    \label{tab: tools}
+\end{table}
+
+Android builds for user acceptance testing are delivered through Firebase App Distribution (Section~\ref{sec:distribution}), and other builds are installed directly from Android Studio and Xcode (Section~\ref{sec:install}).
+
 The exact availability of platform services and notifications should be reported according to the devices and configurations used during testing.
 
 
@@ -434,7 +512,7 @@ The application maintains a local copy of the polygon for an immediate direction
 
 The route service requests route geometry, distance, and duration through the Google Routes API; OSRM provides a fallback. During driving, the application can request a new route when the driver is at least 75~m from the current route or has moved at least 50~m since the previous calculation, subject to a minimum interval of 15 seconds. These thresholds are implementation settings rather than evidence of routing accuracy.
 
-Testing and demonstration are planned using both real devices with physical movement and simulated locations. Results from the two methods should be presented separately.
+Testing and demonstration used both real devices with physical movement and simulated locations, and the results of the two methods are reported separately.
 
 \begin{figure}[htbp] % 'h' means "here" (suggested placement)
     \centering
@@ -456,6 +534,8 @@ Testing and demonstration are planned using both real devices with physical move
     \caption{Routing Example}
     \label{fig:routing}
 \end{figure}
+
+A core feature of the routing system is its ability to detect deviations from the suggested route and automatically generate a new optimized path in real time. A routing example is shown in Figure~\ref{fig:routing}. This applies to both inbound and outbound trips. For inbound travel to USC Talamban Campus, the application initially calculates an optimized route from the student driver’s current location to the campus, incorporating predefined pickup points situated along major roads and bus stops. As the driver begins the journey, the system constantly monitors their GPS position. If the driver takes a turn or route that deviates from the suggested path, the Google Routes API (through the \texttt{computeRouteAsia} Cloud Function) is called to recalculate a new route to the original destination—USC Talamban Campus—while still attempting to pass through as many nearby pickup points as possible. This dynamic rerouting, demonstrated in Figures~\ref{fig: generated route} and~\ref{fig: recalculated route} ensures minimal disruption to the ride-matching process, while allowing the driver to navigate based on real-time road conditions or personal preferences.
 
 \begin{figure}[htbp] % 'h' means "here" (suggested placement)
     \centering
@@ -1150,6 +1230,9 @@ Registration documents are stored in Cloud Storage under the applicant’s ident
 A scheduled function processes selected operational records after twelve months, including rides, reports, ratings, emergency events, and completed or cancelled requests. Processing occurs in batches, so deletion is not necessarily immediate at the twelve-month mark. A separate trigger sets an expiry for counterpart profile and vehicle details on a ride record; the scheduled job subsequently removes those fields. Other identifiers may remain until later deletion, so removing these fields does not make the entire ride record anonymous.
 
 Account withdrawal requires authentication and is refused while the user has a pending, accepted, or active ride. The implemented withdrawal function removes the authentication account, uploaded registration documents, profile, and specified associated records. It retains selected non-identifying reward fields. These descriptions reflect the source code; the deployed configuration, deletion behavior, backups, and access controls should be verified through testing before being reported as confirmed outcomes.
+
+\TODO{Reconcile the study retention and location-handling statements below with the application implementation and approved research protocol before submission.}
+
 \begin{enumerate}
     \item \textbf{Minimizing the Risk of Harm for the Preliminary Survey}: For the preliminary Google Forms survey aimed at understanding participants' residential locations and commuting preferences, the primary risk involves the sensitivity of location-related data. To minimize this, data collection was strictly limited to what is essential for focusing the app's geographical development. Participation was voluntary, and respondents were assured that their specific location data would be handled with care, potentially aggregated or pseudonymized early in the analysis to prevent individual identification and used solely for the purpose of tailoring the application's scope. No adverse consequences would arise from choosing not to participate or from any specific responses provided.
 
@@ -1157,9 +1240,7 @@ Account withdrawal requires authentication and is refused while the user has a p
 
     \item \textbf{Obtaining Informed Consent}: A robust informed consent process was implemented for both the preliminary survey and the application testing phases. For the Google Forms survey, participants received a clear explanation of its purpose (to gather data on location and commuting preferences for app development), how their data would be used, and an assurance of voluntary participation. For the application prototype, this process was integrated into the onboarding interface, and the microphone is used only after a plain-language consent dialog appears before the operating system's own permission prompt. Users (both drivers and passengers) received plain-language information about the app’s purpose, functionality, specific data usage (including location tracking and ride history), potential risks associated with ridesharing, and their right to withdraw at any time without penalty, requiring their active acknowledgement and agreement before participation.
 
-\TODO{Reconcile the study retention and location-handling statements below with the application implementation and approved research protocol before submission.}
-    \item \textbf{Protecting Privacy and Confidentiality}: The application controls and their limits are described above. Survey access, informed-consent procedures, and any regulatory compliance should be documented from the approved research protocol and actual study practice rather than inferred from the application's code.
-    \item \textbf{Protecting Privacy and Confidentiality}: Data processing follows the Data Privacy Act of 2012 (Republic Act No. 10173) and its principles of transparency, legitimate purpose, and proportionality. The legal basis of each category of data is the consent of the participant (Table~\ref{tab:data}). Data from the Google Forms survey are managed with access restricted to the research team and are used only for the stated purpose. For the application, only essential data are collected (user IDs, the labels of the pickup and drop-off points and the timestamps of the rides, and Ride Token transactions; the precise GPS location is used in real time for matching and tracking only and is not stored, and the researchers cannot access raw GPS points). The data are pseudonymized: a unique identifier replaces the name in Firebase Firestore, and the contact details of a participant are kept in a separate file from the research data. Pseudonymized data are not anonymous, because pickup and drop-off points and timestamps can still point to a person. They are therefore accessible only to the researchers, and results are reported only in combined form. Firebase encrypts the data (AES-256 at rest and TLS 1.3 in transit) and Firebase Security Rules control access. Data gathered in the application during the UAT (accounts, uploaded verification documents, ride records, and system logs) are permanently deleted one (1) month after the testing ends, once the combined results without names have been prepared. Consent forms and survey responses are kept for three (3) years after the completion of the study and are then permanently deleted. The informed consent form states the same periods, and the automated retention functions of the application are set to them. A user can also ask for deletion at any time before the data are anonymized or combined into results. The details of retention, storage, access, and destruction are in Sections~\ref{sec:legal} to~\ref{sec:retention}. In the application, the retention periods are carried out by Cloud Functions, which are set to the periods above and not to the earlier 12 months. A user can also delete their own account from Account Settings, which removes the login, uploaded documents, profile, and the records tied to that user; this is refused while the user has an active ride, so that a trip partner is never left stranded. Before anything is deleted, the Ride Token history is copied into an anonymous record that holds only the amount, status, and dates, so that aggregate research data survives without identifying anyone. The names, ratings, and vehicle details that the two riders see are removed from a completed ride 10 days after it ends, leaving only an anonymous ride record.
+    \item \textbf{Protecting Privacy and Confidentiality}: The application's own controls and their limits are described above. Data processing follows the Data Privacy Act of 2012 (Republic Act No. 10173) and its principles of transparency, legitimate purpose, and proportionality. The legal basis of each category of data is the consent of the participant (Table~\ref{tab:data}). Data from the Google Forms survey are managed with access restricted to the research team and are used only for the stated purpose. For the application, only essential data are collected (user IDs, the labels of the pickup and drop-off points and the timestamps of the rides, and Ride Token transactions; the precise GPS location is used in real time for matching and tracking only and is not stored, and the researchers cannot access raw GPS points). The data are pseudonymized: a unique identifier replaces the name in Firebase Firestore, and the contact details of a participant are kept in a separate file from the research data. Pseudonymized data are not anonymous, because pickup and drop-off points and timestamps can still point to a person. They are therefore accessible only to the researchers, and results are reported only in combined form. Firebase encrypts the data (AES-256 at rest and TLS 1.3 in transit) and Firebase Security Rules control access. Data gathered in the application during the UAT (accounts, uploaded verification documents, ride records, and system logs) are permanently deleted one (1) month after the testing ends, once the combined results without names have been prepared. Consent forms and survey responses are kept for three (3) years after the completion of the study and are then permanently deleted. The informed consent form states the same periods, and the automated retention functions of the application are set to them. A user can also ask for deletion at any time before the data are anonymized or combined into results. The details of retention, storage, access, and destruction are in Sections~\ref{sec:legal} to~\ref{sec:retention}. In the application, the retention periods are carried out by Cloud Functions, which are set to the periods above and not to the earlier 12 months. A user can also delete their own account from Account Settings, which removes the login, uploaded documents, profile, and the records tied to that user; this is refused while the user has an active ride, so that a trip partner is never left stranded. Before anything is deleted, the Ride Token history is copied into an anonymous record that holds only the amount, status, and dates, so that aggregate research data survives without identifying anyone. The names, ratings, and vehicle details that the two riders see are removed from a completed ride 10 days after it ends, leaving only an anonymous ride record.
 
 \end{enumerate}
 
