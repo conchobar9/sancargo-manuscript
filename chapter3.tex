@@ -949,13 +949,24 @@ To better understand the scheme, the following example scenarios are provided. T
     \]
 \end{itemize}
 
-% TODO: regenerate the scenario summary figure with the amended figures above
-% (the old image shows 11.44 tokens and 26 rides at 10 km/L).
-%\begin{figure}[htbp]
-%    \centering
-%    \includegraphics[width=0.84\textwidth]{images/scenario a.png}
-%    \caption{Scenario A Calculation Summary}
-%\end{figure}
+\begin{table}[htbp]
+    \centering
+    \caption{Scenario A Calculation Summary}
+    \label{tab:scenario-a}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{2.0}
+    \begin{tabular}{|>{\centering\arraybackslash}p{0.09\textwidth}|>{\centering\arraybackslash}p{0.13\textwidth}|>{\centering\arraybackslash}p{0.34\textwidth}|>{\centering\arraybackslash}p{0.15\textwidth}|>{\centering\arraybackslash}p{0.11\textwidth}|}
+        \hline
+        \textbf{Student Rider} & \textbf{Pickup Distance (km)} & \textbf{Formula} & \textbf{Calculation} & \textbf{Tokens Earned} \\
+        \hline
+        A & 11 & $\dfrac{\text{Fuel Cost per Trip}}{\text{Ride Token Regulator}}$ & $\dfrac{52 \times (11/12)}{5}$ & 9.54 \\
+        \hline
+        \multicolumn{4}{|c|}{\textbf{Total Tokens Earned (One Way)}} & \textbf{9.54} \\
+        \hline
+    \end{tabular}
+    \par\smallskip{\footnotesize Fuel price PHP 52 per liter; mid-size SUV, 12 km/L; Ride Token Regulator 5.}
+\end{table}
 
 \vspace{1em}
 
@@ -975,12 +986,24 @@ To better understand the scheme, the following example scenarios are provided. T
     \]
 \end{itemize}
 
-% TODO: regenerate the scenario summary figure (old image: 4.16 tokens, 72 rides).
-%\begin{figure}[htbp]
-%    \centering
-%    \includegraphics[width=0.84\textwidth]{images/scenario b.png}
-%    \caption{Scenario B Calculation Summary}
-%\end{figure}
+\begin{table}[htbp]
+    \centering
+    \caption{Scenario B Calculation Summary}
+    \label{tab:scenario-b}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{2.0}
+    \begin{tabular}{|>{\centering\arraybackslash}p{0.09\textwidth}|>{\centering\arraybackslash}p{0.13\textwidth}|>{\centering\arraybackslash}p{0.34\textwidth}|>{\centering\arraybackslash}p{0.15\textwidth}|>{\centering\arraybackslash}p{0.11\textwidth}|}
+        \hline
+        \textbf{Student Rider} & \textbf{Pickup Distance (km)} & \textbf{Formula} & \textbf{Calculation} & \textbf{Tokens Earned} \\
+        \hline
+        A & 4 & $\dfrac{\text{Fuel Cost per Trip}}{\text{Ride Token Regulator}}$ & $\dfrac{52 \times (4/12)}{5}$ & 3.47 \\
+        \hline
+        \multicolumn{4}{|c|}{\textbf{Total Tokens Earned (One Way)}} & \textbf{3.47} \\
+        \hline
+    \end{tabular}
+    \par\smallskip{\footnotesize Fuel price PHP 52 per liter; mid-size SUV, 12 km/L; Ride Token Regulator 5.}
+\end{table}
 
 \vspace{1em}
 
@@ -999,12 +1022,30 @@ To prevent over-rewarding for multiple pickups, tokens are distributed proportio
     \]
 \end{itemize}
 
-% TODO: regenerate the scenario summary figure (old image: 18.26 tokens, 17 rides).
-%\begin{figure}[htbp]
-%    \centering
-%    \includegraphics[width=0.92\textwidth]{images/scenario c.png}
-%    \caption{Scenario C Calculation Summary}
-%\end{figure}
+\begin{table}[htbp]
+    \centering
+    \caption{Scenario C Calculation Summary}
+    \label{tab:scenario-c}
+    \small
+    \setlength{\tabcolsep}{4pt}
+    \renewcommand{\arraystretch}{2.0}
+    \begin{tabular}{|>{\centering\arraybackslash}p{0.09\textwidth}|>{\centering\arraybackslash}p{0.13\textwidth}|>{\centering\arraybackslash}p{0.34\textwidth}|>{\centering\arraybackslash}p{0.15\textwidth}|>{\centering\arraybackslash}p{0.11\textwidth}|}
+        \hline
+        \textbf{Student Rider} & \textbf{Pickup Distance (km)} & \textbf{Formula} & \textbf{Calculation} & \textbf{Tokens Earned} \\
+        \hline
+        A & 11 & $\dfrac{\text{Fuel Cost per Trip}}{\text{Ride Token Regulator}}$ & $\dfrac{52 \times (11/12)}{5}$ & 9.54 \\
+        \hline
+        B & 9 & \multirow{3}{*}{\scriptsize $\dfrac{\text{Rider Distance}}{\text{Total Shared Distance} - \text{Rider Distance}}$} & $\dfrac{9}{11-9}$ & 4.5 \\
+        \cline{1-2}\cline{4-5}
+        C & 7 & & $\dfrac{7}{11-7}$ & 1.75 \\
+        \cline{1-2}\cline{4-5}
+        D & 4 & & $\dfrac{4}{11-4}$ & 0.571 \\
+        \hline
+        \multicolumn{4}{|c|}{\textbf{Total Tokens Earned}} & \textbf{16.36} \\
+        \hline
+    \end{tabular}
+    \par\smallskip{\footnotesize Rider Distance is the distance from the rider's pickup point to the final destination. Total Shared Distance is 11 km. Fuel price PHP 52 per liter; mid-size SUV, 12 km/L; Ride Token Regulator 5.}
+\end{table}
 
 \vspace{1em}
 The first passenger always contributes the full token value for the total distance. The ratio in Equation~3.6 does not depend on the vehicle and grows without bound as a passenger's pickup point approaches the first passenger's. This is acceptable for regular rides because pickup and drop-off points are set in advance by the administrator and are never arbitrarily close; arbitrary exit points are handled by the flat early drop-off rate above.
