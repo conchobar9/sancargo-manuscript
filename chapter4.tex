@@ -384,6 +384,40 @@ The confusion matrix in Figure~\ref{fig:confusion} shows where the model is righ
     \label{fig:ai-dart}
 \end{figure}
 
+\FloatBarrier
+\section{Reading the Test Results}
+\label{sec:readresults}
+The tests reported in the rest of this chapter are the unit tests, the system test cases, and the beta tester tasks. Each result is recorded under one fixed label, and a label means the same thing wherever it appears. Table~\ref{tab:resultlabels} states the meanings once, so that the tables that follow can be read without further explanation.
+
+\begin{table}[H]
+    \centering
+    \caption{Meaning of the Result Labels}
+    \label{tab:resultlabels}
+    \small
+    \renewcommand{\arraystretch}{1.25}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.15\textwidth}|>{\raggedright\arraybackslash}p{0.19\textwidth}|>{\raggedright\arraybackslash}p{0.50\textwidth}|}
+        \hline
+        \textbf{Label} & \textbf{Used for} & \textbf{Meaning} \\
+        \hline
+        Pass & Unit tests, system cases, beta tasks & The actual result matched the expected result written before the test. A system case on a physical device is a Pass only when all five rounds succeeded. \\
+        \hline
+        Fail & Unit tests, system cases, beta tasks & The actual result differed from the expected result. Every Fail is entered in the defect log with a severity (Section~\ref{sec:phases}); a beta tester also writes what was seen instead. \\
+        \hline
+        Blocked & System cases & The case could not be carried out because something it depends on was not available. It is neither a Pass nor a Fail, and its reason is stated. \\
+        \hline
+        Skipped & Unit tests & The test did not run because an input it needs was not supplied. It is neither a Pass nor a Fail. \\
+        \hline
+        Could not try & Beta tasks & The tester did not attempt the task, for example an optional task, or could not do it for a reason outside the application. It is neither a Pass nor a Fail. \\
+        \hline
+        N/A & System cases, per device & The case does not apply to that device, or cannot be tested on it because of a limit of the test setup and not because of how the application behaved. It is not a Fail. \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Pass rates count only what was actually run. A Pass counts in favor, a Fail counts against, and an N/A or Could not try result is left out of the count, which is why the iPhone columns of Table~\ref{tab:system} show 28 cases run instead of 32, and why the beta pass rate ignores Could not try. These results are still reported separately, so that a reader can see how many cases were not run and why, and none of them is hidden inside a pass rate. In this study, N/A applies to the four notification cases (S-E1 to S-E4) on the two iPhones, because the free Apple IDs used could not receive push notifications (Section~\ref{sec:scope}). Skipped applies to the one unit test that compares the Dart feature extractor with the Librosa reference, which runs only when the reference files are supplied.
+
+A Pass means that the application behaved as the expected result said, in the setting where the case was run, which is an emulator or a physical device. It does not prove that no defect exists, and a result on an emulator is not a result on a physical device. For this reason, the emulator and device results are reported separately.
+
 \section{Alpha Testing: Unit Testing}
 \label{sec:unit-results}
 Unit testing was run with \texttt{flutter test} and the Cloud Functions test suite. All 345 Flutter tests passed, with no failures and none skipped (the Dart versus Librosa test runs when its reference file is supplied), which is a 100\% pass rate. All 9 of the Cloud Functions and security rules checks passed. Table~\ref{tab:unit} shows the Flutter tests by area.
