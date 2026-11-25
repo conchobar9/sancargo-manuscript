@@ -403,11 +403,9 @@ The tests reported in the rest of this chapter are the unit tests, the system te
         \hline
         Fail & Unit tests, system cases, beta tasks & The actual result differed from the expected result. Every Fail is entered in the defect log with a severity (Section~\ref{sec:phases}); a beta tester also writes what was seen instead. \\
         \hline
-        Blocked & System cases & The case could not be carried out because something it depends on was not available. It is neither a Pass nor a Fail, and its reason is stated. \\
-        \hline
         Skipped & Unit tests & The test did not run because an input it needs was not supplied. It is neither a Pass nor a Fail. \\
         \hline
-        Could not try & Beta tasks & The tester did not attempt the task, for example an optional task, or could not do it for a reason outside the application. It is neither a Pass nor a Fail. \\
+        Could not try & Beta tasks (optional) & The tester did not do one of the optional tasks (O1 to O3). It is neither a Pass nor a Fail. \\
         \hline
         N/A & System cases, per device & The case does not apply to that device, or cannot be tested on it because of a limit of the test setup and not because of how the application behaved. It is not a Fail. \\
         \hline
@@ -444,7 +442,7 @@ Unit testing was run with \texttt{flutter test} and the Cloud Functions test sui
 
 \section{Alpha Testing: System Testing}
 \label{sec:system-results}
-System testing ran 32 cases. On the emulators, all 32 passed on the first run, with none failed or blocked (a 100\% first-run pass rate). On the three physical devices (a Samsung Galaxy A06 5G, an iPhone 17, and an iPhone 15 Pro Max), each case was run in five rounds and passed only when all five rounds succeeded. All 32 cases passed on the Android phone. The iPhones could not receive push notifications, because the proponents used free Apple IDs (Section~\ref{sec:scope}), so the four notification cases (S-E1 to S-E4) could not be tested on them and are marked N/A. The other 28 cases passed on both iPhones, with none failed or blocked. Three cases (S-B5, S-B7, and S-D2) were run for one round only. Table~\ref{tab:system} shows the results by area.
+System testing ran 32 cases. On the emulators, all 32 passed on the first run, with none failed (a 100\% first-run pass rate). On the three physical devices (a Samsung Galaxy A06 5G, an iPhone 17, and an iPhone 15 Pro Max), each case was run in five rounds and passed only when all five rounds succeeded. All 32 cases passed on the Android phone. The iPhones could not receive push notifications, because the proponents used free Apple IDs (Section~\ref{sec:scope}), so the four notification cases (S-E1 to S-E4) could not be tested on them and are marked N/A. The other 28 cases passed on both iPhones, with none failed. Three cases (S-B5, S-B7, and S-D2) were run for one round only. Table~\ref{tab:system} shows the results by area.
 
 \begin{table}[htbp]
     \centering
@@ -534,14 +532,20 @@ All testers answered that the application did not crash, freeze, or lose their p
 \subsection{Limits Found}
 Two limits were found in beta testing: visual interface issues on Android devices, and differing opinions on mood classification, which appeared both among the most confusing parts and among the suggested improvements. In addition, the rides were played on emulators with simulated GPS, so the results say nothing about how real GPS drifts on a moving vehicle, battery use and heat, or whether live tracking survives a phone in a pocket. Twelve testers is a small group, and most had not used a ridesharing application before.
 
-\TODO{Add the System Usability Scale average (target 68 or higher), the result of the team checks, and the severity of the problems reported by testers, which are not in the results received so far.}
+\TODO{Add the result of the team checks and the severity of the problems reported by testers, which are not in the results received so far.}
 
 
 \section{User Acceptance Testing}
-\TODO{UAT results are not available yet: number of participants (up to 60), number of rides matched, completion and failure rates, and the feedback survey ratings.}
+\label{sec:uat-results}
+\TODO{UAT results are not available yet: number of participants (up to 60), number of rides matched, and completion and failure rates.}
 
-\section{Preliminary Survey}
+\subsection{Preliminary Survey}
+\label{sec:prelim-results}
 \TODO{Preliminary survey results (target at least 191 responses): number of responses, residential locations and landmarks, phone operating systems and carriers, number of students interested in UAT, and driver-to-passenger ratio.}
+
+\subsection{Feedback Survey}
+\label{sec:uat-feedback-results}
+\TODO{UAT feedback survey results: the System Usability Scale average (target 68 or higher), the experience ratings, the open responses, and the severity of the problems reported by participants.}
 
 \section{Discussion}
 The alpha testing results show that the core logic of the application works as designed. The automated checks of ride matching and the Ride Token system (Objectives 2 and 3) all passed, and the whole-system cases (Objective 1) all passed on the emulators and on the Android phone, and on the two iPhones all the cases that could be run passed (the four notification cases could not be tested on iOS), with the matching, token, notification, and safety flows behaving as specified on the devices that could receive notifications. The response times of about one to two seconds for requests and acceptances are short enough for a ride-matching interaction.
