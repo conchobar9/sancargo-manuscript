@@ -594,7 +594,7 @@ The driver interface presents requests associated with pickup points near the re
 
 On the driver's screen, route alignment uses a 30~m proximity threshold from the relevant ride point to the remaining route. Requests at the same queue point and direction are ordered by creation time. On acceptance, the \texttt{matchRide} Cloud Function checks that the request is pending, the driver is available and approved, the trip direction and position relative to the Bunzel geofence agree, and a seat remains. The driver's straight-line distance from the pickup must be no more than 100~m for inbound trips or 400~m for outbound trips. The function also checks queue order and vehicle preference before updating the request and capacity in a transaction. An unknown vehicle type is treated as compatible. The server does not independently recheck the route-proximity filter because it does not have the route polyline.
 
-Two further limits keep the interaction safe and relevant. An inbound passenger can only request a pickup point that is within 20~m of their position. A driver is shown a request only when its pickup point is within 30~m of the remaining route, and can accept it only when the driver is within 100~m of the pickup point for an inbound trip, or within 400~m for an outbound trip, and the passengers on board are below the vehicle's capacity. When a driver's position changes so that a waiting request becomes eligible under these checks, a Cloud Function uses the same server-side eligibility check as acceptance and sends a push notification, so the driver does not have to keep the screen open. A narrower 300 to 400~m prompt window with a minimum estimated time of arrival of three minutes was part of the original design to limit distraction, but it is not applied in the current build. When the match is accepted, the server also copies each side's display name and rating, and the driver's vehicle type and plate number, onto the request so that the two riders can recognize each other.
+Two further limits keep the interaction safe and relevant. An inbound passenger can only request a pickup point that is within 20~m of their position. A driver is shown a request only when its pickup point is within 30~m of the remaining route, and can accept it only when the driver is within 100~m of the pickup point for an inbound trip, or within 400~m for an outbound trip, and the passengers on board are below the vehicle's capacity. When a driver's position changes so that a waiting request becomes eligible under these checks, a Cloud Function uses the same server-side eligibility check as acceptance and sends a push notification, so the driver does not have to keep the screen open. To limit distraction, an inbound driver is prompted only when a passenger is 60 to 100~m ahead and the estimated time of arrival is over three minutes; the original design used a window of 300 to 400~m. When the match is accepted, the server also copies each side's display name and rating, and the driver's vehicle type and plate number, onto the request so that the two riders can recognize each other.
 
 This logic is consistent with optimization practices found in ride-hailing literature, where user fairness and system-level route efficiency are jointly considered to balance service quality and operational practicality \cite{cao2021optimization}. Additionally, minimizing cognitive load on drivers through controlled notifications aligns with research showing that poorly timed prompts can contribute to distracted driving and reduce overall safety—particularly among younger, less experienced drivers such as university students \cite{xing2024understanding,oviedo2018young}. By showing a driver only requests that are on the route, close enough to accept, and within capacity, and by notifying only when a request becomes eligible, the system limits unnecessary prompts while maintaining real-time responsiveness in a multi-user environment.
 
@@ -728,7 +728,7 @@ Figure~\ref{fig: passenger menu} shows the user flow for the Passenger Menu. The
 
     \flowsplit{Passenger Menu}{fig: passenger menu}{Passenger Menu}
 
-\paragraph{Inbound USC-TC} Figures~\ref{fig: Passenger Inbound} and~\ref{fig: Passenger Inbound 2} outline the passenger's journey to the campus. The application shows the approved pickup points near the passenger, each marked \emph{In range} or \emph{Too far} (Figure~\ref{fig:ui-pax-inbound}a). A request can only be made for a point within 20~m of the passenger. The passenger then chooses which moods to accept and a vehicle preference, where \emph{Any} matches every driver (Figure~\ref{fig:ui-pax-inbound}b), and taps \emph{Request ride}. The server creates the request, sets its direction from the pickup point, and fixes the passenger's place in the first-in, first-out queue of that pickup point. The waiting screen reads \emph{Looking for a driver} (Figure~\ref{fig:ui-pax-inbound}c). If the passenger moves more than 100~m from the pickup point while waiting, the request is cancelled automatically. After about two minutes without a match, the passenger may accept more moods or vehicle types; this edits the same request, so the queue place does not change (Section~\ref{sec:moodmatch}). When a driver accepts, the passenger is notified, can follow the driver's location on the map, and can chat with the driver (Figure~\ref{fig:ui-pax-inbound}d). If the driver cancels or ends the trip early, the passenger sees a notice and may request again. A passenger who needs to leave before the end can ask for an early drop-off, which the driver confirms.
+\paragraph{Inbound USC-TC} Figures~\ref{fig: Passenger Inbound} and~\ref{fig: Passenger Inbound 2} outline the passenger's journey to the campus. The application shows the approved pickup points near the passenger, each marked \emph{In range} or \emph{Too far} (Figure~\ref{fig:ui-pax-inbound}a). A request can only be made for a point within 20~m of the passenger. The passenger then chooses which moods to accept and a vehicle preference, where \emph{Any} matches every driver (Figure~\ref{fig:ui-pax-inbound}b), and taps \emph{Request ride}. The server creates the request, sets its direction from the pickup point, and fixes the passenger's place in the first-in, first-out queue of that pickup point. The waiting screen reads \emph{Looking for a driver} (Figure~\ref{fig:ui-pax-inbound}c). If the passenger moves more than 20~m from the pickup point while waiting, the request is cancelled automatically. After about two minutes without a match, the passenger may accept more moods or vehicle types; this edits the same request, so the queue place does not change (Section~\ref{sec:moodmatch}). When a driver accepts, the passenger is notified, can follow the driver's location on the map, and can chat with the driver (Figure~\ref{fig:ui-pax-inbound}d). If the driver cancels or ends the trip early, the passenger sees a notice and may request again. A passenger who needs to leave before the end can ask for an early drop-off, which the driver confirms.
 
     \flowsplit{Passenger Inbound to USC-TC (1 of 2): requesting a ride}{fig: Passenger Inbound}{Passenger Inbound 1}
 
@@ -744,7 +744,7 @@ Figure~\ref{fig: passenger menu} shows the user flow for the Passenger Menu. The
         \label{fig:ui-pax-inbound}
     \end{figure}
 
-\paragraph{Outbound USC-TC} Figures~\ref{fig: Passenger Outbound} and~\ref{fig: Passenger Outbound 2} detail how a passenger books a trip from the campus to an external destination. The passenger must be inside the campus and within 100~m of the Bunzel Lobby, which is the only pickup point. The passenger opens the drop-off picker and selects one of the approved drop-off points (Figure~\ref{fig:ui-pax-outbound}a), sets the preferences as for inbound trips, and taps \emph{Request ride}. If no driver accepts, the passenger can try a different drop-off point; the alternatives are ranked by how many available drivers are heading that way (Figure~\ref{fig:ui-pax-outbound}b, Section~\ref{sec:matching}). Once a driver accepts, the passenger is notified (Figure~\ref{fig:ui-pax-outbound}c), is picked up at the Bunzel Lobby, and is dropped off at the chosen point.
+\paragraph{Outbound USC-TC} Figures~\ref{fig: Passenger Outbound} and~\ref{fig: Passenger Outbound 2} detail how a passenger books a trip from the campus to an external destination. The passenger must be inside the Bunzel geofence, and the Bunzel Lobby is the only pickup point. The passenger opens the drop-off picker and selects one of the approved drop-off points (Figure~\ref{fig:ui-pax-outbound}a), sets the preferences as for inbound trips, and taps \emph{Request ride}. If no driver accepts, the passenger can try a different drop-off point; the alternatives are ranked by how many available drivers are heading that way (Figure~\ref{fig:ui-pax-outbound}b, Section~\ref{sec:matching}). Once a driver accepts, the passenger is notified (Figure~\ref{fig:ui-pax-outbound}c), is picked up at the Bunzel Lobby, and is dropped off at the chosen point.
 
     \flowsplit{Passenger Outbound from USC-TC (1 of 2): requesting a ride}{fig: Passenger Outbound}{Passenger Outbound 1}
 
@@ -905,7 +905,7 @@ The ceilings above are enforced on the server. The driver's running total cannot
 
 \vspace{1em}
 
-To better understand the scheme, the following example scenarios are provided. They use a fuel price of PHP 52 per liter, the example price used in the original proposal, and a driver who declared the mid-size SUV category (12~km/L, Table~\ref{tab:efficiency}). The vehicle category matters: the same 11~km trip earns about 2.08 Ride Tokens for a scooter and 9.54 for this SUV, so reaching the semester cap takes between about 32 and 145 shared rides depending on the vehicle. Scenarios A to C show a single passenger and several pickups. Scenarios D to I cover the other cases of the scheme: the vehicle category, passengers who share a pickup point, early drop-offs, the first passenger of an outbound trip who leaves early, and the semester ceiling. Unless stated otherwise, they keep the same fuel price and the same SUV. The trips of about 11~km in Scenarios A to I illustrate the scheme over a longer commute, such as the routes the system can support beyond USC-TC; they were not made in the study. Scenarios J to L use campus-length trips, like the rides of the controlled testing, with an assumed distance of 0.5~km that is given only for illustration, because the real distance depends on the points used.
+To better understand the scheme, the following example scenarios are provided. They use a fuel price of PHP 52 per liter, the example price used in the original proposal, and a driver who declared the mid-size SUV category (12~km/L, Table~\ref{tab:efficiency}). The vehicle category matters: the same 11~km trip earns about 2.08 Ride Tokens for a scooter and 9.54 for this SUV, so reaching the semester cap takes between about 32 and 145 shared rides depending on the vehicle. Scenarios A to C show a single passenger and several pickups. Scenarios D to I cover the other cases of the scheme: the vehicle category, passengers who share a pickup point, early drop-offs, the first passenger of an outbound trip who leaves early, and the semester ceiling. Unless stated otherwise, they keep the same fuel price and the same SUV. The trips of about 11~km in Scenarios A to I illustrate the scheme over a longer commute, such as the routes the system can support beyond USC-TC; they were not made in the study. Scenarios J to M use campus-length trips, like the rides of the controlled testing, with an assumed distance of 0.5~km that is given only for illustration, because the real distance depends on the points used.
 
 \vspace{1em}
 \noindent\textit{Scenario A: Long-Distance Carpooler (11 km one way)}
@@ -1094,7 +1094,7 @@ This is the trip of Scenario C, made inbound to USC-TC, except that Passenger D 
 
 \vspace{1em}
 \noindent\textit{Scenario H: The First Passenger of an Outbound Trip Leaves Early}
-The driver of the mid-size SUV starts an outbound trip from the Bunzel building with two passengers. The first passenger asked for a drop-off point 6.0~km away, but the driver stopped 200~m before that point, outside its 100~m confirmation radius, so the ride was ended as an early drop-off after 5.8~km. The second passenger also leaves early.
+The driver of the mid-size SUV starts an outbound trip from the Bunzel building with two passengers. The first passenger asked for a drop-off point 6.0~km away, but the driver stopped 200~m before that point, outside the 150~m within which a drop-off can be confirmed, so the ride was ended as an early drop-off after 5.8~km. The second passenger also leaves early.
 \begin{itemize}
     \item The first passenger is priced like a regular rider, on the distance actually driven to the exit point (5.8 km):
     \[
@@ -1152,6 +1152,19 @@ The driver of the mid-size SUV starts an outbound trip from the Bunzel building 
 \end{itemize}
 
 \vspace{1em}
+\noindent\textit{Scenario M: Several Passengers on a Campus-Length Trip}
+The scheme was designed for real commutes, where distances are in kilometers and the pickup points are far apart. This scenario shows why the calculation can look off on a campus-length trip.
+\begin{itemize}
+    \item The inbound trip of Scenario J has four passengers, with assumed pickup points 0.5, 0.3, 0.2, and 0.1~km from the destination.
+    \item \textbf{A} (0.5 km): full trip value, 0.43 Ride Tokens.
+    \item \textbf{B} (0.3 km): $\frac{0.3}{0.5-0.3} = 1.5$ Ride Tokens.
+    \item \textbf{C} (0.2 km): $\frac{0.2}{0.5-0.2} \approx 0.667$ Ride Tokens.
+    \item \textbf{D} (0.1 km): $\frac{0.1}{0.5-0.1} = 0.25$ Ride Tokens.
+    \item \textbf{Total Ride Tokens earned:} 2.85, which is more than six times the 0.44 of a trip with one passenger.
+\end{itemize}
+The ratio in Equation~3.6 depends only on how the pickup points lie along the trip and not on how long the trip is, whereas the value of the first passenger follows the fuel burned and so shrinks with the distance. On a commute of 11~km the two are of similar size (Scenario C). On a campus trip of 0.5~km, the first passenger earns 0.44 Ride Tokens and the other three earn 1.5, 0.67, and 0.25, so the total looks large for the short distance driven. The scheme was designed for real-life commutes, and the campus-length scenarios are shown to explain this behavior, not as a typical outcome of the scheme.
+
+\vspace{1em}
 Table~\ref{tab:scenario-summary} lists the example scenarios and what each one shows.
 
 \begin{table}[htbp]
@@ -1176,6 +1189,7 @@ Table~\ref{tab:scenario-summary} lists the example scenarios and what each one s
         J & One passenger, campus-length trip (0.5 km, assumed) & 0.44 \\
         K & Two passengers with the same pickup point and destination, campus length & 0.44 in total \\
         L & Early drop-off on a campus-length trip & 1.00 \\
+        M & Several passengers on a campus-length trip (assumed distances) & 2.85 \\
         \hline
     \end{tabular}
 \end{table}
@@ -1395,28 +1409,6 @@ The proposal described the system and the study for a wider setting, with pickup
 The same practice was followed for the mood design, whose changes from the proposal are stated in Section~\ref{sec:ai}.
 
 \section{Testing Plan} 
-\subsection{Preliminary Survey (Baseline Data Collection)}
-\label{sec:prelim}
-\indent Before the application is launched for testing, a Google Forms survey is distributed to all enrolled USC Computer Engineering students. It has two purposes: to collect baseline data for the development of the application, and to recruit volunteers for user acceptance testing (Section~\ref{sec:phases}). The full list of questions is in Appendix~\ref{app:prelim}. The form collects the following:
-
-\begin{itemize}
-    \item \textbf{Location.} The city where the student primarily lives in the first semester of A.Y. 2026--2027 (Cebu City, Mandaue City, Lapu-Lapu City, Talisay City, or another place), and the nearest major landmark to where the student starts his or her daily commute. Respondents are told not to enter an exact house number or street address. The landmarks help the proponents choose pick-up and drop-off zones.
-    \item \textbf{Devices.} The operating system of the student's phone (iOS, Android, or both), the phone model, and the network carriers used for mobile data. These show which platforms and network conditions the application must work on.
-    \item \textbf{Interest in user acceptance testing.} Whether the student wants to be a pilot tester for one week, and the role he or she wants to take (both driver and passenger, or passenger only). A note on the form states that only student-drivers can earn CES points.
-    \item \textbf{Vehicle (for students who choose the driver role).} Whether the vehicle with the USC Motor Vehicle Pass sticker is a car or a motorcycle. The study is limited to one registered vehicle per student-driver. Car drivers state the fuel type, since only gasoline-powered and diesel-powered vehicles are accepted, and the Ride Token computation uses the fuel price. Motorcycle drivers state whether they have a spare helmet to lend to a passenger.
-\end{itemize}
-
-Students who say they are interested receive an email with the date and time of the onboarding for user acceptance testing.
-
-This survey data helps refine the application's target user base, determine the driver-to-passenger ratio, and choose the pick-up and drop-off zones.
-
-The survey is sent to all enrolled Computer Engineering students ($N = 378$). The target number of responses follows Cochran's formula \cite{cochran1977} with a 95\% confidence level ($z = 1.96$), a 5\% margin of error ($e$), and an assumed proportion $p = 0.5$:
-\begin{equation}
-    n_0 = \frac{z^2\, p\,(1-p)}{e^2} \approx 384.16, \qquad
-    n = \frac{n_0}{1 + \frac{n_0 - 1}{N}} \approx 190.8 \;\Rightarrow\; 191 \text{ responses.}
-\end{equation}
-Survey respondents who are not selected do not receive an incentive. The incentives of the selected participants are described in Section~\ref{sec:phases}.
-
 \subsection{Testing Phases}
 \label{sec:phases}
 Testing is carried out in four phases. The first two phases are referred to as alpha testing, and are performed by the proponents. Table~\ref{tab:phases} summarizes the phases and the objective each one supports.
@@ -1578,10 +1570,50 @@ UAT evaluates the application in real use. Up to 60 Computer Engineering student
 
 \textit{Incentives and benefits.} Student-driver participants are rewarded with CES points for their rideshare service through the CES project proposal ``SanCarGo User Acceptance Testing: A Student Ridesharing Service for the USC Community'' (CES PPA Control No. CES2026-1SA-050), which the USC Community Extension Services (CES) Office approved on October 26, 2026 (Appendix~\ref{app:ces}). Student-passengers get a free ride to or from the campus buildings used in the testing. The CES points are separate from the course grade. Ride Tokens earned during UAT are not converted to CES points; once the application is live, tokens convert to CES points as described in Section~\ref{sec:tokens}. All UAT participants also join a raffle (a single prize drawing, with the GCash prize amount announced at onboarding), and early withdrawal makes a participant ineligible for the raffle. No fuel allowance or travel reimbursement is given. UAT participants answer the same feedback form as beta testers, but they see the System Usability Scale instead of the task results (Section~\ref{sec:survey}) and is judged mainly on its usability and perception questions, which are non-functional. The target for the System Usability Scale average is 68 or higher.
 
+\paragraph{Preliminary survey (baseline data collection).}\label{sec:prelim}
+\indent Before the application is launched for testing, a Google Forms survey is distributed to all enrolled USC Computer Engineering students. It has two purposes: to collect baseline data for the development of the application, and to recruit volunteers for user acceptance testing (Section~\ref{sec:phases}). The full list of questions is in Appendix~\ref{app:prelim}. The form collects the following:
+
+\begin{itemize}
+    \item \textbf{Location.} The city where the student primarily lives in the first semester of A.Y. 2026--2027 (Cebu City, Mandaue City, Lapu-Lapu City, Talisay City, or another place), and the nearest major landmark to where the student starts his or her daily commute. Respondents are told not to enter an exact house number or street address. The landmarks help the proponents choose pick-up and drop-off zones.
+    \item \textbf{Devices.} The operating system of the student's phone (iOS, Android, or both), the phone model, and the network carriers used for mobile data. These show which platforms and network conditions the application must work on.
+    \item \textbf{Interest in user acceptance testing.} Whether the student wants to be a pilot tester for one week, and the role he or she wants to take (both driver and passenger, or passenger only). A note on the form states that only student-drivers can earn CES points.
+    \item \textbf{Vehicle (for students who choose the driver role).} Whether the vehicle with the USC Motor Vehicle Pass sticker is a car or a motorcycle. The study is limited to one registered vehicle per student-driver. Car drivers state the fuel type, since only gasoline-powered and diesel-powered vehicles are accepted, and the Ride Token computation uses the fuel price. Motorcycle drivers state whether they have a spare helmet to lend to a passenger.
+\end{itemize}
+
+Students who say they are interested receive an email with the date and time of the onboarding for user acceptance testing.
+
+This survey data helps refine the application's target user base, determine the driver-to-passenger ratio, and choose the pick-up and drop-off zones.
+
+The survey is sent to all enrolled Computer Engineering students ($N = 378$). The target number of responses follows Cochran's formula \cite{cochran1977} with a 95\% confidence level ($z = 1.96$), a 5\% margin of error ($e$), and an assumed proportion $p = 0.5$:
+\begin{equation}
+    n_0 = \frac{z^2\, p\,(1-p)}{e^2} \approx 384.16, \qquad
+    n = \frac{n_0}{1 + \frac{n_0 - 1}{N}} \approx 190.8 \;\Rightarrow\; 191 \text{ responses.}
+\end{equation}
+Survey respondents who are not selected do not receive an incentive. The incentives of the selected participants are described in Section~\ref{sec:phases}.
+
 \paragraph{Distribution of the application.}\label{sec:distribution}
 Android builds are released to the UAT participants through Firebase App Distribution, a free service of Firebase that delivers pre-release builds to a list of invited testers. The earlier Kapiot project released its alpha build through the same service~\cite{pepito2022}. It was chosen for three reasons. First, the application needs no app store listing or review, so the proponents can release a build as soon as it is ready. Second, only the people the proponents invite can install it, which keeps the pre-release version limited to the UAT participants who gave their consent. Third, the Firebase tools are already part of the project (Section~\ref{sec:tools}), so no new account or service is needed. iOS builds are not released this way; they are installed from Xcode during onboarding (Section~\ref{sec:install}).
 
 The Android release follows five steps, which are shown in Appendix~\ref{app:download}. The proponents upload the build under test to Firebase App Distribution with short release notes, and add the email address of each participant as a tester. Only email addresses in the usc.edu.ph domain were invited, so the pre-release version was limited to USC students. The participants were not placed in groups: each one chose the role (driver or passenger) that he or she wanted to test. The service sends each participant an invitation email with a link. The participant opens the link on the phone that runs the application, signs in with his or her USC (usc.edu.ph) Google account, and accepts the invitation. The participant then follows the prompts to download and install the application, which includes allowing the installation when the phone asks. Finally, the participant opens the application, registers with a USC email, and waits for the administrator's approval before following the tester tasks. An invitation is valid for 30 days, and a participant whose invitation has expired asks the proponents for a new one. When the proponents release a corrected build during the UAT period, the testers are notified and update through the same service, so every participant tests the same version.
+
+\paragraph{Feedback survey (Google Forms evaluation).}\label{sec:survey}
+\indent After beta testing and after UAT, testers complete the same Google Form, sent to each tester after the tasks. The form shows each group only its own parts: beta testers answer Parts 1, 2, 4, and 5, and UAT participants answer Parts 1, 3, 4, and 5. Beta testers are identified by a tester code given by the proponents, so that no names are needed. The parts are listed in Appendix~\ref{app:survey}:
+
+\begin{enumerate}
+    \item \textbf{About the tester}: the tester code (beta testers only) and how often the tester uses ridesharing applications (never, sometimes, or often), which both groups answer.
+    \item \textbf{Task results (beta testers only)}: Pass or Fail for every task that was done, and Could not try for an optional task that was not done, with a text box asking what the tester saw instead for every Fail.
+    \item \textbf{System Usability Scale (SUS), UAT only}: ten statements rated from 1 (strongly disagree) to 5 (strongly agree).
+    \item \textbf{Experience (both groups)}: seven statements rated from 1 to 5 on speed, notification timing, error messages, readability of the screens and map, how easy the emergency button is to find, why location and microphone access are requested, and how safely personal information is handled.
+    \item \textbf{Open questions (both groups)}: whether the application crashed, froze, or lost the tester's place; the most confusing part; what was liked most; the one change that would improve it most; and whether the tester would use the application to get to or from campus.
+\end{enumerate}
+
+The SUS score of each UAT participant is computed by subtracting 1 from the answer for every odd-numbered statement, subtracting the answer from 5 for every even-numbered statement, adding the ten values, and multiplying the sum by 2.5, which gives a score from 0 to 100:
+\begin{equation}
+    \text{SUS} = 2.5 \left[ \sum_{i \in \{1,3,5,7,9\}} (x_i - 1) + \sum_{i \in \{2,4,6,8,10\}} (5 - x_i) \right]
+\end{equation}
+where $x_i$ is the answer to statement $i$. The scores are averaged over the UAT participants, and a score of about 68 is the usual benchmark for average usability. The experience ratings of Part 4 are reported as averages and are testers' perceptions, not measurements.
+
+After each survey closes, the proponents read the comments (every Fail comment in the beta survey and the open responses in both surveys), group the repeated ones, and give each real problem a severity (Critical, Major, Minor, or Cosmetic, as defined in Section~\ref{sec:phases}).
 
 \subsection{Test Cases for Key Features} %\\
 \indent Each feature underwent specific test scenarios to confirm that it performed as expected. Below is a breakdown of the major features and their corresponding validation methods:
@@ -1629,27 +1661,6 @@ Testing Method: Simulated rides with pre-defined fare calculations to check accu
 \end{enumerate}
 
 \vspace{1em}
-
-\subsection{User Feedback and Google Forms Evaluation}
-\label{sec:survey}
-\indent After beta testing and after UAT, testers complete the same Google Form, sent to each tester after the tasks. The form shows each group only its own parts: beta testers answer Parts 1, 2, 4, and 5, and UAT participants answer Parts 1, 3, 4, and 5. Beta testers are identified by a tester code given by the proponents, so that no names are needed. The parts are listed in Appendix~\ref{app:survey}:
-
-\begin{enumerate}
-    \item \textbf{About the tester}: the tester code (beta testers only) and how often the tester uses ridesharing applications (never, sometimes, or often), which both groups answer.
-    \item \textbf{Task results (beta testers only)}: Pass or Fail for every task that was done, and Could not try for an optional task that was not done, with a text box asking what the tester saw instead for every Fail.
-    \item \textbf{System Usability Scale (SUS), UAT only}: ten statements rated from 1 (strongly disagree) to 5 (strongly agree).
-    \item \textbf{Experience (both groups)}: seven statements rated from 1 to 5 on speed, notification timing, error messages, readability of the screens and map, how easy the emergency button is to find, why location and microphone access are requested, and how safely personal information is handled.
-    \item \textbf{Open questions (both groups)}: whether the application crashed, froze, or lost the tester's place; the most confusing part; what was liked most; the one change that would improve it most; and whether the tester would use the application to get to or from campus.
-\end{enumerate}
-
-The SUS score of each UAT participant is computed by subtracting 1 from the answer for every odd-numbered statement, subtracting the answer from 5 for every even-numbered statement, adding the ten values, and multiplying the sum by 2.5, which gives a score from 0 to 100:
-\begin{equation}
-    \text{SUS} = 2.5 \left[ \sum_{i \in \{1,3,5,7,9\}} (x_i - 1) + \sum_{i \in \{2,4,6,8,10\}} (5 - x_i) \right]
-\end{equation}
-where $x_i$ is the answer to statement $i$. The scores are averaged over the UAT participants, and a score of about 68 is the usual benchmark for average usability. The experience ratings of Part 4 are reported as averages and are testers' perceptions, not measurements.
-
-After each survey closes, the proponents read the comments (every Fail comment in the beta survey and the open responses in both surveys), group the repeated ones, and give each real problem a severity (Critical, Major, Minor, or Cosmetic, as defined in Section~\ref{sec:phases}).
-
 
 \section{Project Checking Strategy}\label{sec:checking}
 \indent Following the panelists' instruction, the project checking is a live demonstration of actual ride activity (pickup, driving, and drop-off) with the participants physically present, so the proponents and panelists can observe system behavior, user interaction, and backend updates concurrently. All of it is done inside the USC-TC campus. The participants are drawn from the UAT participants rather than from a separately recruited group. The project checking is scheduled between November 30 and December 4, 2026, in one of the Computer Engineering classrooms or laboratories on the second floor of the Bunzel building, and it follows the safety protocol of Section~\ref{sec:uat-safety} and takes place only after the Research Ethics Committee has reviewed the safety arrangements. The pickup and drop-off places of the demonstration are campus buildings: the inbound trip is built around SAS, which is the pickup point of the inbound trip, and the outbound trip starts at the Bunzel building and ends at SAFAD and SAS.
