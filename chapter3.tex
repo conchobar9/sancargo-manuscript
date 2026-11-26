@@ -1,6 +1,7 @@
 \chapter{Methodology}
 
 \section{Conceptual Framework}
+\label{sec:conceptual}
 
 SanCarGo is a mobile ridesharing system designed to connect student-drivers and student-passengers traveling to or from the Bunzel Building at the University of San Carlos Talamban Campus (USC-TC). The system uses the user’s location, trip direction, selected ride points, available vehicle capacity, and the passenger's mood and vehicle preferences to support route planning and ride-request processing. Its outputs include a displayed route, ride-request status, match information, and trip updates.
 
@@ -904,7 +905,7 @@ The ceilings above are enforced on the server. The driver's running total cannot
 
 \vspace{1em}
 
-To better understand the scheme, the following example scenarios are provided. They use a fuel price of PHP 52 per liter, the example price used in the original proposal, and a driver who declared the mid-size SUV category (12~km/L, Table~\ref{tab:efficiency}). The vehicle category matters: the same 11~km trip earns about 2.08 Ride Tokens for a scooter and 9.54 for this SUV, so reaching the semester cap takes between about 32 and 145 shared rides depending on the vehicle. Scenarios A to C show a single passenger and several pickups. Scenarios D to I cover the other cases of the scheme: the vehicle category, passengers who share a pickup point, early drop-offs, the first passenger of an outbound trip who leaves early, and the semester ceiling. Unless stated otherwise, they keep the same fuel price and the same SUV.
+To better understand the scheme, the following example scenarios are provided. They use a fuel price of PHP 52 per liter, the example price used in the original proposal, and a driver who declared the mid-size SUV category (12~km/L, Table~\ref{tab:efficiency}). The vehicle category matters: the same 11~km trip earns about 2.08 Ride Tokens for a scooter and 9.54 for this SUV, so reaching the semester cap takes between about 32 and 145 shared rides depending on the vehicle. Scenarios A to C show a single passenger and several pickups. Scenarios D to I cover the other cases of the scheme: the vehicle category, passengers who share a pickup point, early drop-offs, the first passenger of an outbound trip who leaves early, and the semester ceiling. Unless stated otherwise, they keep the same fuel price and the same SUV. The trips of about 11~km in Scenarios A to I illustrate the scheme over a longer commute, such as the routes the system can support beyond USC-TC; they were not made in the study. Scenarios J to L use campus-length trips, like the rides of the controlled testing, with an assumed distance of 0.5~km that is given only for illustration, because the real distance depends on the points used.
 
 \vspace{1em}
 \noindent\textit{Scenario A: Long-Distance Carpooler (11 km one way)}
@@ -1116,6 +1117,41 @@ The driver of the mid-size SUV starts an outbound trip from the Bunzel building 
 \end{itemize}
 
 \vspace{1em}
+\noindent\textit{Scenario J: A Campus-Length Trip (0.5 km)}
+\begin{itemize}
+    \item A Student Driver takes Student Passenger A on an inbound trip of 0.5 km between two campus buildings.
+    \item Fuel consumption: 0.5/12 $\approx$ 0.042 L.
+    \item Applying the Ride Token Regulator:
+    \[
+    \frac{52 \times (0.5/12)}{5} \approx 0.44 \text{ Ride Tokens per trip}
+    \]
+    \item To reach the semester ceiling of 300 Ride Tokens:
+    \[
+    \frac{300}{0.44} \approx 682 \text{ trips}
+    \]
+    \item A campus trip earns far less than a commute of 11 km, so the ceiling is not reached in a short period of campus testing.
+\end{itemize}
+
+\vspace{1em}
+\noindent\textit{Scenario K: Two Passengers on a Campus-Length Trip}
+\begin{itemize}
+    \item Passenger A and Passenger B board at the same campus building and travel to the same destination, 0.5 km away.
+    \item The full value of the trip is 0.44 Ride Tokens (Scenario J), shared equally:
+    \[
+    \frac{0.44}{2} = 0.22 \text{ Ride Tokens each}
+    \]
+    \item The driver earns 0.44 Ride Tokens in total.
+\end{itemize}
+
+\vspace{1em}
+\noindent\textit{Scenario L: An Early Drop-off on a Campus-Length Trip}
+\begin{itemize}
+    \item On the inbound trip of Scenario J, the passenger asks to get off before the destination, and the driver confirms.
+    \item The early drop-off earns the flat rate of 1 Ride Token, whatever the length of the ride.
+    \item If the passenger had stayed until the destination, the award would have been 0.44 Ride Tokens. On a short ride, the flat rate pays more than the fuel formula, which is the trade-off accepted for early drop-offs.
+\end{itemize}
+
+\vspace{1em}
 Table~\ref{tab:scenario-summary} lists the example scenarios and what each one shows.
 
 \begin{table}[htbp]
@@ -1137,6 +1173,9 @@ Table~\ref{tab:scenario-summary} lists the example scenarios and what each one s
         G & Inbound trip with early drop-offs only & 3.00 \\
         H & First passenger of an outbound trip leaves early & 6.03 \\
         I & Award cut by the semester ceiling & 5.00 of 9.54 \\
+        J & One passenger, campus-length trip (0.5 km, assumed) & 0.44 \\
+        K & Two passengers with the same pickup point and destination, campus length & 0.44 in total \\
+        L & Early drop-off on a campus-length trip & 1.00 \\
         \hline
     \end{tabular}
 \end{table}
@@ -1343,6 +1382,18 @@ An incidental finding is information that appears during the testing without bei
 \subsection[Retention and Destruction]{Retention and Destruction}\label{sec:retention}
 Retention follows one schedule for each category of data (Table~\ref{tab:data}). Data gathered in the application during the UAT (accounts, uploaded verification documents, ride records, and system logs) are deleted one (1) month after the testing ends, once the combined results without names have been prepared; the precise GPS location is never stored. Consent forms, survey responses (preliminary and feedback), and the incident log are kept for three (3) years after the completion of the study as proof of consent and for the study records, and are then deleted. The combined results are part of the thesis and contain no names. At each deletion date, Jon Gil A. Ramas, as the responsible researcher, deletes the Firebase data, the Google Forms responses, the downloaded files, the local copies, and the backups of that category, and shreds the paper copies; a second researcher checks the deletion and signs a destruction log. When a participant withdraws, his or her data are deleted on request, including the copies above, except for data that were already irreversibly anonymized or combined into results, which can no longer be taken out. This limit is stated in the informed consent form.
 
+\subsection[Changes from the Proposal on the Advice of the REC]{Changes from the Proposal on the Advice of the REC}\label{sec:rec-changes}
+The proposal described the system and the study for a wider setting, with pickup and drop-off points along public roads outside the campus. The design of the system did not change: the application, the routing and matching rules, the mood classifier, and the Ride Token scheme are as described in Sections~\ref{sec:conceptual} to~\ref{sec:tokens}, and they can support routes beyond USC-TC. On the advice of the Research Ethics Committee (REC), which recommended that the research be conducted within the USC-TC campus as a controlled setting, the study was adjusted as follows. The changes concern how the system was tested, and each is described where it applies.
+\begin{itemize}
+    \item \textbf{Setting.} Testing and demonstration were conducted inside the USC-TC campus only, and no ride was made on public roads. The Bunzel geofence classified the direction of a trip, the Bunzel Point was the fixed terminal, and the other pickup and drop-off points were approved campus buildings, such as SAFAD and SAS (Sections~\ref{sec:routing} and~\ref{sec:uat-safety}).
+    \item \textbf{Duration.} The user acceptance testing was shortened from two weeks to one week (Section~\ref{sec:phases}).
+    \item \textbf{Safety.} A safety protocol and a risk assessment for the rides were added (Sections~\ref{sec:uat-safety} and~\ref{sec:risk}).
+    \item \textbf{Data.} The categories of personal data, their legal basis, the data flow, the storage and access, and one retention schedule were stated (Sections~\ref{sec:legal} to~\ref{sec:retention}).
+    \item \textbf{Participants.} Eligibility and exclusion criteria were added for both roles, and the parent's permit was removed from the required documents because every participant is an adult who gives his or her own consent (Sections~\ref{sec:phases} and~\ref{sec:registration}).
+    \item \textbf{Consent and benefits.} The Informed Consent Form was revised to describe the actual rides, the risks, the emergency procedures, the insurance, and the benefits to the participants (Appendix~\ref{app:icf}).
+\end{itemize}
+The same practice was followed for the mood design, whose changes from the proposal are stated in Section~\ref{sec:ai}.
+
 \section{Testing Plan} 
 \subsection{Preliminary Survey (Baseline Data Collection)}
 \label{sec:prelim}
@@ -1511,6 +1562,8 @@ Emulator-played rides have limits. They do not show how real GPS drifts on a mov
         \hline
     \end{tabular}
 \end{table}
+
+\paragraph{Pre-UAT dry run.} Towards the end of beta testing, the proponents went over the flow of the application (Section~\ref{sec:flow}) and asked three people they personally reached out to, such as family members, to try it as a dry run ahead of the UAT. The dry run was not framed as a usability evaluation, and it did not go into technical detail.
 
 \subsubsection{Phase 4: User Acceptance Testing}
 UAT evaluates the application in real use. Up to 60 Computer Engineering students take part, with Years 1 to 3 prioritized because they are on campus more days of the week, which makes matching and supervision possible; students of any year level may be selected, and the choice has no effect on grades. The number is set by the capacity of the proponents to supervise the testing and by the number of participants needed for rides to match (for example, about 15 drivers with about 3 passengers each), and not by a formula. UAT lasts one week, is held inside the USC-TC campus only (Section~\ref{sec:routing}), and is conducted only after REC approval.
