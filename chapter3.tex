@@ -594,7 +594,7 @@ The driver interface presents requests associated with pickup points near the re
 
 On the driver's screen, route alignment uses the route-match distance from the relevant ride point to the remaining route (Table~\ref{tab:rules-by-setting}). Requests at the same queue point and direction are ordered by creation time. On acceptance, the \texttt{matchRide} Cloud Function checks that the request is pending, the driver is available and approved, the trip direction and position relative to the geofence agree, and a seat remains. The driver's straight-line distance from the pickup must be no more than the acceptance distance of the trip's direction (Table~\ref{tab:rules-by-setting}). The function also checks queue order and vehicle preference before updating the request and capacity in a transaction. An unknown vehicle type is treated as compatible. The server does not independently recheck the route-proximity filter because it does not have the route polyline.
 
-The distances of these checks depend on the setting. The system was designed for real-life commuting. The controlled setting was used only for testing and demonstration, and it uses a smaller geofence and shorter distances. Table~\ref{tab:rules-by-setting} gives both.
+The distances of these checks depend on the setting. The design setting is real-life commuting, which is what the system was designed for. The controlled setting was used only for testing and demonstration, and it uses a smaller geofence and shorter distances. Table~\ref{tab:rules-by-setting} gives both.
 
 \begin{table}[htbp]
     \centering
@@ -604,7 +604,7 @@ The distances of these checks depend on the setting. The system was designed for
     \renewcommand{\arraystretch}{1.25}
     \begin{tabular}{|>{\raggedright\arraybackslash}p{0.27\textwidth}|>{\raggedright\arraybackslash}p{0.30\textwidth}|>{\raggedright\arraybackslash}p{0.30\textwidth}|}
         \hline
-        \textbf{Rule} & \textbf{Real-life commuting} & \textbf{Controlled setting (testing and demonstration)} \\
+        \textbf{Rule} & \textbf{Design setting (real-life commuting)} & \textbf{Controlled setting (testing and demonstration)} \\
         \hline
         Geofence area & A polygon around the USC-TC campus & A smaller polygon around the Bunzel building \\
         \hline
