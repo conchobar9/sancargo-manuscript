@@ -55,7 +55,7 @@ Quiet was classified almost perfectly: no Chill or Lively segment was classified
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.95\textwidth]{images/ai_confusion_matrix.png}
-    \caption{Confusion matrix of the mood classifier (version 4) on the held-out test set (819 segments, split by source clip)}
+    \caption[Confusion matrix of the mood classifier on the held-out test set]{Confusion matrix of the mood classifier (version 4) on the held-out test set (819 segments, split by source clip)}
     \label{fig:confusion}
 \end{figure}
 
@@ -69,7 +69,7 @@ The feature audit measured the 1,821 clips used for training, validation, and te
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{images/ai_mel_spectrograms.png}
-    \caption{Mean mel spectrogram (dB) of 60 randomly sampled 10-second segments from each mood, drawn on one shared color scale. Brighter areas mean more energy at that frequency and time. Quiet is dark across the whole spectrum, whereas Chill and Lively both carry more energy and look alike, which agrees with the overlap between Chill and Lively in Table~\ref{tab:ai-profile}.}
+    \caption[Mean mel spectrogram of each mood]{Mean mel spectrogram (dB) of 60 randomly sampled 10-second segments from each mood, drawn on one shared color scale. Brighter areas mean more energy at that frequency and time. Quiet is dark across the whole spectrum, whereas Chill and Lively both carry more energy and look alike, which agrees with the overlap between Chill and Lively in Table~\ref{tab:ai-profile}.}
     \label{fig:ai-mel}
 \end{figure}
 
@@ -259,7 +259,7 @@ Rule: onset rate only & 0.4225 & 0.4249 & 0.3912 \\
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{images/ai_interval_heatmaps.png}
-    \caption{Simulated behavior of the mood tag for reading intervals of 10, 20, 30, and 60 seconds and averaging windows of 1, 3, 5, 7, and 10 readings: steady-state accuracy of the tag (left), mean time to show a new mood in seconds (middle), and tag changes per hour while the mood is steady (right). The red box marks the setting used in the app (20 seconds, five readings).}
+    \caption[Simulated behavior of the mood tag by interval and window]{Simulated behavior of the mood tag for reading intervals of 10, 20, 30, and 60 seconds and averaging windows of 1, 3, 5, 7, and 10 readings: steady-state accuracy of the tag (left), mean time to show a new mood in seconds (middle), and tag changes per hour while the mood is steady (right). The red box marks the setting used in the app (20 seconds, five readings).}
     \label{fig:ai-interval}
 \end{figure}
 
@@ -373,14 +373,14 @@ The confusion matrix in Figure~\ref{fig:confusion} shows where the model is righ
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.85\textwidth]{images/ai_nine_clips.png}
-    \caption{Correct mood detections out of the nine real-world clips for the version 3 model, the final model in the notebook, the emulator, and the three physical devices.}
+    \caption[Correct mood detections out of the nine real-world clips]{Correct mood detections out of the nine real-world clips for the version 3 model, the final model in the notebook, the emulator, and the three physical devices.}
     \label{fig:ai-clips}
 \end{figure}
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.9\textwidth]{images/ai_dart_librosa.png}
-    \caption{Agreement between the Dart and the Librosa feature extraction on the same 10-second segment, for the 42 feature rows.}
+    \caption[Agreement between the Dart and Librosa feature extraction]{Agreement between the Dart and the Librosa feature extraction on the same 10-second segment, for the 42 feature rows.}
     \label{fig:ai-dart}
 \end{figure}
 
