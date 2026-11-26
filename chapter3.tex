@@ -625,7 +625,7 @@ The distances of these checks depend on the setting. The design setting is real-
         \hline
         Inbound ride completion & Inside the campus geofence or within 150 m of Bunzel & Inside the Bunzel geofence or within 150 m of Bunzel \\
         \hline
-        Outbound drop-off confirmation & Within 30 m of the passenger's destination & Within 30 m of the passenger's destination \\
+        Outbound drop-off confirmation & Within 150 m of the passenger's destination & Within 30 m of the passenger's destination \\
         \hline
     \end{tabular}
 \end{table}
@@ -742,7 +742,7 @@ Figure~\ref{fig:driver menu} shows the user flow for the Driver Menu. The driver
         \label{fig:ui-driver-inbound}
     \end{figure}
 
-\paragraph{Outbound USC-TC} In Figures~\ref{fig:Driver Outbound} and~\ref{fig:Driver Outbound 2}, the driver offers rides from the campus to various destinations (for example, homes or malls). The driver types a destination in the search box or drops a pin on the map (Figure~\ref{fig:ui-driver-outbound}a). The application saves the destination, draws the route from the Bunzel Lobby, and lists the approved drop-off points along that route, each with the number of passengers waiting to be dropped there (Figure~\ref{fig:ui-driver-outbound}b). After switching \emph{Available} on, the driver accepts the requests for the drop-off points they are willing to serve (Figure~\ref{fig:ui-driver-outbound}c), or uses \emph{Auto-accept}. The server checks that the driver is within 400~m of the Bunzel Lobby and applies the other conditions of Section~\ref{sec:matching}. Accepted passengers are grouped by drop-off point. At the Bunzel Lobby the driver confirms each pickup, which starts the trip. Along the route the driver confirms each drop-off when within 30~m of its point (Figure~\ref{fig:ui-driver-outbound}d); when the last passenger is dropped off, the trip is complete. Early drop-offs, cancellations, and early termination work as in the inbound flow.
+\paragraph{Outbound USC-TC} In Figures~\ref{fig:Driver Outbound} and~\ref{fig:Driver Outbound 2}, the driver offers rides from the campus to various destinations (for example, homes or malls). The driver types a destination in the search box or drops a pin on the map (Figure~\ref{fig:ui-driver-outbound}a). The application saves the destination, draws the route from the Bunzel Lobby, and lists the approved drop-off points along that route, each with the number of passengers waiting to be dropped there (Figure~\ref{fig:ui-driver-outbound}b). After switching \emph{Available} on, the driver accepts the requests for the drop-off points they are willing to serve (Figure~\ref{fig:ui-driver-outbound}c), or uses \emph{Auto-accept}. The server checks that the driver is within 400~m of the Bunzel Lobby and applies the other conditions of Section~\ref{sec:matching}. Accepted passengers are grouped by drop-off point. At the Bunzel Lobby the driver confirms each pickup, which starts the trip. Along the route the driver confirms each drop-off when within the confirmation distance of its point (Table~\ref{tab:rules-by-setting}) (Figure~\ref{fig:ui-driver-outbound}d); when the last passenger is dropped off, the trip is complete. Early drop-offs, cancellations, and early termination work as in the inbound flow.
 
     \flowsplit{Driver Outbound from USC-TC (1 of 2): going available and accepting requests}{fig:Driver Outbound}{Driver Outbound 1}
 
@@ -1130,7 +1130,7 @@ This is the trip of Scenario C, made inbound to USC-TC, except that Passenger D 
 
 \vspace{1em}
 \noindent\textit{Scenario H: The First Passenger of an Outbound Trip Leaves Early}
-The driver of the mid-size SUV starts an outbound trip from the Bunzel building with two passengers. The first passenger asked for a drop-off point 6.0~km away, but the driver stopped 200~m before that point, outside the 30~m within which a drop-off can be confirmed, so the ride was ended as an early drop-off after 5.8~km. The second passenger also leaves early.
+The driver of the mid-size SUV starts an outbound trip from the Bunzel building with two passengers. The first passenger asked for a drop-off point 6.0~km away, but the driver stopped 200~m before that point, outside the distance within which a drop-off can be confirmed (Table~\ref{tab:rules-by-setting}), so the ride was ended as an early drop-off after 5.8~km. The second passenger also leaves early.
 \begin{itemize}
     \item The first passenger is priced like a regular rider, on the distance actually driven to the exit point (5.8 km):
     \[
