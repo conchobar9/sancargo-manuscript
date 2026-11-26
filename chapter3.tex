@@ -3,18 +3,19 @@
 \section{Conceptual Framework}
 \label{sec:conceptual}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.54\textwidth]{images/conceptual.png} % Adjust width as needed
+    \caption{Conceptual Framework}
+    \label{fig:conceptual}
+\end{figure}
+
 SanCarGo is a mobile ridesharing system designed to connect student-drivers and student-passengers traveling to or from the Bunzel Building at the University of San Carlos Talamban Campus (USC-TC). The system uses the user’s location, trip direction, selected ride points, available vehicle capacity, and the passenger's mood and vehicle preferences to support route planning and ride-request processing. Its outputs include a displayed route, ride-request status, match information, and trip updates.
 
 The application was developed using Flutter for Android and iOS. Firebase Authentication manages user sign-in, while administrative approval and role-based checks govern access to ride functions. Cloud Firestore stores application data, including user profiles, ride requests, driver availability, and ride records. Firebase Cloud Functions perform server-side operations such as creating requests and accepting rides. Google Maps displays locations and routes, while routing services provide route geometry and travel estimates.
 
 The system was designed to accommodate routes and ride points beyond USC-TC. However, for this study, testing and demonstration are limited to selected points within the campus. The Bunzel Point serves as the fixed campus terminal and lies inside the operational geofence. The remaining study points lie outside that geofence but within USC-TC.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.54\textwidth]{images/conceptual.png} % Adjust width as needed
-    \caption{Conceptual Framework}
-    \label{fig:conceptual}
-\end{figure}
 
 An additional layer of personalization is introduced through a Mood-Based AI system. This system classifies the in-car music environment into categories like Lively, Chill, or Quiet using on-device audio feature extraction and a lightweight machine learning model. Passengers indicate the moods they accept when they request a ride, and the system incorporates this input during the driver-passenger matching process. This enhances comfort, improves rider satisfaction, and supports better ride experience alignment.
 
