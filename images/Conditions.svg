@@ -5,14 +5,14 @@
 <text x="300" y="53.5" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">Request at a pickup point</text>
 <text x="300" y="84.0" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">(oldest first in the queue)</text>
 <polygon points="300,140 555,250 300,360 45,250" fill="#dbe9f8" stroke="#1f4e79" stroke-width="3"/>
-<text x="300" y="228.2" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">Pickup point within</text>
-<text x="300" y="258.8" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">30 m of the driver's</text>
-<text x="300" y="289.2" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">remaining route?</text>
+<text x="300" y="228.2" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">Pickup point within the</text>
+<text x="300" y="258.8" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">route-match distance of</text>
+<text x="300" y="289.2" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">the driver's route?</text>
 <polygon points="300,412 585,580 300,748 15,580" fill="#dbe9f8" stroke="#1f4e79" stroke-width="3"/>
-<text x="300" y="543.0" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">Driver within 100 m (inbound)</text>
-<text x="300" y="573.5" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">or 400 m (outbound) of the</text>
-<text x="300" y="604.0" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">pickup point, a seat free,</text>
-<text x="300" y="634.5" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">and request first in the queue?</text>
+<text x="300" y="543.0" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">Driver within the acceptance</text>
+<text x="300" y="573.5" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">distance of the pickup point,</text>
+<text x="300" y="604.0" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">a seat free, and request</text>
+<text x="300" y="634.5" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">first in the queue?</text>
 <polygon points="300,795 555,905 300,1015 45,905" fill="#dbe9f8" stroke="#1f4e79" stroke-width="3"/>
 <text x="300" y="883.2" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">Mood tag (if known) and</text>
 <text x="300" y="913.8" font-size="25" font-weight="400" text-anchor="middle" fill="#1d2330">vehicle type within the</text>
