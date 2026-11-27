@@ -1,6 +1,6 @@
 \chapter{Results and Discussion}
 
-This chapter reports the results gathered so far. The alpha testing results (unit and system testing) and the beta testing results are as of mid-November 2026. User acceptance testing (UAT) and the preliminary survey have not yet produced results, and their sections are marked for completion.
+This chapter reports the results gathered so far. The alpha testing results (unit and system testing) and the beta testing results are as of mid-November 2026. The user acceptance testing (UAT) has been carried out, but the results of its feedback survey and of the preliminary survey are not yet reported, and their sections are marked for completion.
 
 \section{AI Mood Performance}
 \label{sec:ai-results}
@@ -486,11 +486,17 @@ Two limits were found in beta testing: visual interface issues on Android device
 
 \section{User Acceptance Testing}
 \label{sec:uat-results}
-\TODO{UAT results are not available yet: number of participants (up to 60), number of rides matched, and completion and failure rates.}
+\subsection{Participation and Conduct}
+\label{sec:uat-conduct}
+Forty-six students took part in the UAT, against the target of about 48 (25\% of the 191 target respondents, Section~\ref{sec:phases}). The target was already a realistic expectation and not a statistical sample, and the number reached was close to it.
+
+The UAT departed from the plan in two ways. First, it was planned for two weeks but was held for one week. The review of the REC took longer than the proponents expected, and the test had to be compressed into the time that remained. Second, only a few participants were willing to take part in actual rides. The controlled setting confined the rides to the campus routes of Table~\ref{tab:rules-by-setting}, and the participants did not find it practical to drive around the campus: the routes were out of the way for them and would take some time, since, as Computer Engineering students, they stay mostly at the Bunzel building where their classes are held. The participants were willing to use the application and to test it, in particular its user interface, and most of this use was done while stationary, but they were not willing to make actual rides around the campus.
+
+These departures limit what the UAT can show. The results describe the usability and the perception of the application by the participants, and they say little about how the application behaves on actual rides, which the system tests on physical devices and the beta tests on emulators covered only in part. \TODO{Add the number of rides that were matched and completed during the UAT, and the completion and failure rates.}
 
 \subsection{Preliminary Survey}
 \label{sec:prelim-results}
-\TODO{Preliminary survey results (target at least 191 responses): number of responses, residential locations and landmarks, phone operating systems and carriers, number of students interested in UAT, and driver-to-passenger ratio.}
+\TODO{Preliminary survey results (target at least 191 respondents): number of respondents, residential locations and landmarks, phone operating systems and carriers, number of respondents who chose to be testers, and driver-to-passenger ratio.}
 
 \subsection{Feedback Survey}
 \label{sec:uat-feedback-results}
@@ -503,4 +509,4 @@ Read against the test levels of ISO/IEC/IEEE 29119 used as the reference framewo
 
 The beta results are positive. All required tasks passed for every tester, 97.2\% of all task results were Pass, no crashes were reported, and the experience ratings were all above 4 out of 5, which suggests that testers who had mostly never used a ridesharing application could complete the main ride flow. The main weakness they pointed to was the mood feature: its classification, what to expect from it, and its buttons were mentioned among both the most confusing parts and the improvements wanted, which agrees with the rating check of Section~\ref{sec:ai-rating}, where the Lively and Calm labels of the AI did not match the labels of the raters. The models themselves ran as intended on the phones: the golden clips were reproduced on one Android phone and one iPhone (Section~\ref{sec:ai-phones}).
 
-The results also show what is not yet proven. Three system cases were run for one round only. The beta rides were played on emulators with simulated GPS, and the group was small, so the results do not show how the application behaves with real GPS on a moving vehicle. Finally, Objective 4, the evaluation with Computer Engineering students, depends on UAT, which has not yet been done. \TODO{Rewrite this discussion after the UAT and survey results are in, and relate the findings to the related literature in Chapter 2.}
+The results also show what is not yet proven. Three system cases were run for one round only. The beta rides were played on emulators with simulated GPS, and the group was small, so the results do not show how the application behaves with real GPS on a moving vehicle. Finally, Objective 4, the evaluation with Computer Engineering students, depends on the UAT results, which are not yet reported. The UAT also reached 46 students, was held for one week and not the planned two, and included only a few actual rides (Section~\ref{sec:uat-conduct}), so it will say more about the usability of the application than about its behavior on rides. \TODO{Rewrite this discussion after the UAT and survey results are in, and relate the findings to the related literature in Chapter 2.}
