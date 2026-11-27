@@ -84,7 +84,7 @@ S-C6 & Passenger prefers motorcycle. Test a car driver, a motorcycle driver, and
 \endhead
 S-D1 & Complete one trip. Check the reward ledger. Call the completion again. & Exactly one award. The client sent only a trip ID. A retry returns the same award. Check against the formula: fuel price $\times$ (distance $\div$ efficiency) $\div$ 5, rounded up to 0.01 (PHP 60/L, 13 km, 26 km/L gives 6.00). \\
 \hline
-S-D2 & Complete a trip with two or three passengers. & The first passenger gets the full value. Riders who travel the whole shared distance split equally. Others follow Equation~3.6. The breakdown on the admin card matches. \\
+S-D2 & Complete a trip with two or three passengers. & The first passenger gets the full value. Riders who travel the whole shared distance split equally. Others follow Equation~(\ref{eq:extra}). The breakdown on the admin card matches. \\
 \hline
 S-D3 & Set a semester period with the admin screen or the set-ces-period script, then push a driver’s total near 300. & The award is clamped at 300 per semester. The excess is forfeited, and the ledger shows the uncapped amount and the cap reason. \\
 \hline

@@ -1,46 +1,171 @@
-% Appendix: Nine Real-World Test Clips
-\chapter{Nine Real-World Test Clips}
+% Appendix: Names, Stored Values, and Data of the Mood AI
+\chapter{Names, Stored Values, and Data of the Mood AI}
 \label{app:clips}
 \clearpage
 
-The nine clips were played through a Bluetooth speaker near the microphone of the device in the app, and each has an expected mood that was set before testing. Table~\ref{tab:ai-clips} lists the clips and what was observed. Correct means that the mood given by the model, or the tag displayed by the app on the emulator and the devices, matched the expected mood. Incorrect means that it did not. Songs 1 to 9 are numbered as in Section~\ref{sec:ai-ondevice}.
+This appendix lists the names that the text uses for the mood AI and the values that the application stores, and it lists the files and the data sets of the mood AI with their licences. In the text, the display names are used. In the code, in tables of fields, and in this appendix, the stored values are used.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Names in the text and stored or code values}\label{tab:ai-names}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.28\textwidth}|>{\raggedright\arraybackslash}p{.27\textwidth}|>{\raggedright\arraybackslash}p{.30\textwidth}|}
+        \hline
+        \textbf{Concept} & \textbf{In the text} & \textbf{Stored or code value} \\
+        \hline
+        High-arousal label & Lively & \texttt{loud} \\
+        \hline
+        Low-arousal label & Calm & \texttt{chill} \\
+        \hline
+        No music or speech & Quiet & \texttt{quiet} \\
+        \hline
+        Unknown or not yet sensed & Sensing mood & no value; matches everyone \\
+        \hline
+        Passenger accepts any mood & Any (No Preference) & empty list \\
+        \hline
+        Label of the driver & the mood label of the driver & \texttt{moodTag} on the availability record of the driver, with \texttt{moodTag\_updated\_at} \\
+        \hline
+        Preference of the passenger & mood preference & list of the accepted moods on the ride request \\
+        \hline
+        Sound-type model & YAMNet & \texttt{yamnet\_embeddings.tflite} \\
+        \hline
+        Speech embedding model & x-vector & \texttt{xvector.onnx} \\
+        \hline
+        Heads & speech head, music head & \texttt{head\_speech.json}, \texttt{head\_music.json} \\
+        \hline
+        Settings file & AI configuration & \texttt{config.json} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+The passenger-side option No Preference is not a class of the model. It is the passenger opting out of the filter, and it matches every driver.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Values that the application uses for the mood AI}\label{tab:ai-values}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.34\textwidth}|>{\raggedright\arraybackslash}p{.52\textwidth}|}
+        \hline
+        \textbf{Item} & \textbf{Value} \\
+        \hline
+        Window & 84,720 samples at 16~kHz (5.295~s), back to back \\
+        \hline
+        Speech cutoff of the sound-type step & Mean Speech score (class 0) of 0.15 or more \\
+        \hline
+        Music cutoff of the sound-type step & Mean Music score (class 132) of 0.20 or more \\
+        \hline
+        Speech head & x-vector embedding (512 numbers); linear head; reading above 0 is Lively \\
+        \hline
+        Music head & YAMNet mean and maximum (2,048 numbers); linear head; reading above 5.0 is Lively \\
+        \hline
+        Confirm rule & 2 identical new raw labels in a row \\
+        \hline
+        Size of the models & YAMNet 15.0~MB (TensorFlow Lite); x-vector 17.0~MB (ONNX) \\
+        \hline
+        Minimum iOS version & 16 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Data sets used for the mood AI and their licences}\label{tab:ai-datasets}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.16\textwidth}|>{\raggedright\arraybackslash}p{.46\textwidth}|>{\raggedright\arraybackslash}p{.18\textwidth}|}
+        \hline
+        \textbf{Data set} & \textbf{Use} & \textbf{Licence} \\
+        \hline
+        RAVDESS~\cite{livingstone2018ravdess} & Training of the speech head (1,248 clips after the calm clips are left out) & CC BY-NC-SA 4.0 \\
+        \hline
+        DEAM~\cite{aljanaki2017deam} & Training of the music head (15,696 windows from 1,744 excerpts) & CC BY-NC-SA 4.0 \\
+        \hline
+        PMEmo~\cite{zhang2018pmemo} & Held-out evaluation of the music head only (767 clips) & CC BY-NC-SA 4.0 \\
+        \hline
+        MUSAN~\cite{snyder2015musan} & Tuning and testing of the sound-type step, mixing, and noise tests; no arousal ratings & CC BY 4.0 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section*{Per-Clip Results of the Researcher Rating Check}
+Table~\ref{tab:ai-clips} lists the 30 car recordings of Section~\ref{sec:ai-rating}. The agreed label is the label that both blind raters gave, and ``--'' means that they disagreed, so the clip is not scored (5 clips). The recorder was not blind, and the recorder column is supplementary. The label of the AI is the label of the first window of 5.295 seconds, which is the label that the rating check scores. The label of the last window is shown for information only. Clips 9, 25, and 27 are the quiet clips.
 
 {
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.2}
-\begin{longtable}{|>{\centering\arraybackslash}p{.05\textwidth}|>{\raggedright\arraybackslash}p{.24\textwidth}|>{\raggedright\arraybackslash}p{.10\textwidth}|>{\raggedright\arraybackslash}p{.12\textwidth}|>{\raggedright\arraybackslash}p{.20\textwidth}|>{\raggedright\arraybackslash}p{.14\textwidth}|}
-\caption{Real-world clips, expected moods, and results}\label{tab:ai-clips}\\
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|c|l|c|c|c|c|c|c|c|}
+\caption{Labels of the raters and of the AI for each car recording}\label{tab:ai-clips}\\
 \hline
-\textbf{No.} & \textbf{Clip} & \textbf{Expected mood} & \textbf{Final model on Colab} & \textbf{Emulator (displayed tag)} & \textbf{Physical devices} \\
+\textbf{Clip} & \textbf{Kind} & \textbf{Rater 1} & \textbf{Rater 2} & \textbf{Agreed} & \textbf{Recorder} & \textbf{AI first} & \textbf{AI last} & \textbf{AI matched} \\
 \hline
 \endfirsthead
 \hline
-\textbf{No.} & \textbf{Clip} & \textbf{Expected mood} & \textbf{Final model on Colab} & \textbf{Emulator (displayed tag)} & \textbf{Physical devices} \\
+\textbf{Clip} & \textbf{Kind} & \textbf{Rater 1} & \textbf{Rater 2} & \textbf{Agreed} & \textbf{Recorder} & \textbf{AI first} & \textbf{AI last} & \textbf{AI matched} \\
 \hline
 \endhead
 \endfoot
-1 & Traffic noise & Quiet & Correct & Correct & Correct \\
+1 & Music & Lively & Calm & -- & Lively & Calm & Calm & -- \\
 \hline
-2 & “I’ll Look Around” by Billie Holiday & Chill & Correct & Correct & Correct \\
+2 & Music & Calm & Calm & Calm & Calm & Calm & Calm & Yes \\
 \hline
-3 & “Hootie Frutti” by KATSEYE & Lively & Correct & Correct (the first reading was Quiet 0.57 and Lively 0.43) & Correct \\
+3 & Music & Calm & Calm & Calm & Calm & Calm & Calm & Yes \\
 \hline
-4 & Car aircon noise & Quiet & Correct & Correct (the tag briefly changed to Chill) & Correct \\
+4 & Music & Lively & Calm & -- & Lively & Calm & Calm & -- \\
 \hline
-5 & Podcast clip from Michelle Obama & Chill & Called Lively & Called Quiet (97\% to 100\% confidence) & Called Lively \\
+5 & Speech & Lively & Lively & Lively & Calm & Lively & Lively & Yes \\
 \hline
-6 & “Not OK” by 5 Seconds of Summer & Lively & Correct & Correct & Correct \\
+6 & Music & Lively & Calm & -- & Calm & Calm & Calm & -- \\
 \hline
-7 & Car revving sound effect & Quiet & Correct & Correct & Correct \\
+7 & Speech & Calm & Calm & Calm & Calm & Lively & Lively & No \\
 \hline
-8 & “Indecisions” by Rex Orange County and Daniel Caesar & Chill & Called Lively & Correct & Called Lively \\
+8 & Speech & Calm & Calm & Calm & Calm & Lively & Lively & No \\
 \hline
-9 & “Leak It” by FLO & Lively & Correct & Correct & Correct \\
+9 & Quiet & Quiet & Quiet & Quiet & Quiet & Quiet & Quiet & Yes \\
 \hline
- & Total correct &  & 7 of 9 & 8 of 9 & 7 of 9 on each device \\
+10 & Music & Lively & Lively & Lively & Lively & Calm & Calm & No \\
+\hline
+11 & Music & Lively & Lively & Lively & Lively & Calm & Calm & No \\
+\hline
+12 & Music & Lively & Lively & Lively & Lively & Calm & Calm & No \\
+\hline
+13 & Music & Calm & Calm & Calm & Calm & Calm & Calm & Yes \\
+\hline
+14 & Music & Calm & Calm & Calm & Calm & Calm & Calm & Yes \\
+\hline
+15 & Speech & Calm & Calm & Calm & Calm & Lively & Lively & No \\
+\hline
+16 & Music & Lively & Lively & Lively & Lively & Lively & Lively & Yes \\
+\hline
+17 & Music & Lively & Lively & Lively & Lively & Calm & Calm & No \\
+\hline
+18 & Speech & Calm & Calm & Calm & Calm & Lively & Calm & No \\
+\hline
+19 & Speech & Calm & Calm & Calm & Calm & Lively & Lively & No \\
+\hline
+20 & Music & Lively & Lively & Lively & Lively & Calm & Calm & No \\
+\hline
+21 & Speech & Calm & Calm & Calm & Calm & Lively & Lively & No \\
+\hline
+22 & Speech & Calm & Calm & Calm & Lively & Lively & Lively & No \\
+\hline
+23 & Speech & Calm & Calm & Calm & Calm & Lively & Lively & No \\
+\hline
+24 & Music & Lively & Lively & Lively & Lively & Calm & Calm & No \\
+\hline
+25 & Quiet & Quiet & Quiet & Quiet & Quiet & Quiet & Quiet & Yes \\
+\hline
+26 & Speech & Calm & Lively & -- & Lively & Lively & Lively & -- \\
+\hline
+27 & Quiet & Quiet & Quiet & Quiet & Quiet & Quiet & Quiet & Yes \\
+\hline
+28 & Speech & Calm & Calm & Calm & Calm & Lively & Lively & No \\
+\hline
+29 & Music & Lively & Calm & -- & Calm & Calm & Lively & -- \\
+\hline
+30 & Music & Lively & Lively & Lively & Lively & Calm & Calm & No \\
 \hline
 \end{longtable}
 }
-
-The model was not trained on speech, so the podcast clip (song 5) is outside the training data.

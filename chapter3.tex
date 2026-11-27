@@ -17,7 +17,7 @@ The application was developed using Flutter for Android and iOS. Firebase Authen
 The system was designed to accommodate routes and ride points beyond USC-TC. However, for this study, testing and demonstration are limited to selected points within the campus. The Bunzel Point serves as the fixed campus terminal and lies inside the operational geofence. The remaining study points lie outside that geofence but within USC-TC.
 
 
-An additional layer of personalization is introduced through a Mood-Based AI system. This system classifies the in-car music environment into categories like Lively, Chill, or Quiet using on-device audio feature extraction and a lightweight machine learning model. Passengers indicate the moods they accept when they request a ride, and the system incorporates this input during the driver-passenger matching process. This enhances comfort, improves rider satisfaction, and supports better ride experience alignment.
+An additional layer of personalization is introduced through a Mood-Based AI system. This system rates the energy of the sound in the car, whether music or speech, as Lively, Calm, or Quiet, using two small pretrained models that run on the driver's phone and two lightweight arousal heads. Passengers indicate the moods they accept when they request a ride, and the system incorporates this input during the driver-passenger matching process. This enhances comfort, improves rider satisfaction, and supports better ride experience alignment.
 
 The Ride Token and CES point system (Section~\ref{sec:tokens}) rewards student drivers for completed rides with non-monetary incentives, fostering engagement and volunteerism.
 
@@ -36,7 +36,7 @@ SanCarGo provides features for requesting, coordinating, and monitoring shared r
     \item \textbf{Notifications and chat}: The application provides push notifications for selected ride events and an in-app communication channel for matched users. Availability depends on device configuration and connectivity.
     \item \textbf{Destination selection and early drop-off}: For an outbound trip, the driver can select a destination through place search or a map pin. A passenger may request an early drop-off for the driver to confirm.
     \item \textbf{Ride history, feedback, and reports}: Users can review ride records and submit ratings or reports through the application.
-    \item \textbf{Mood-based matching}: Passengers choose the moods they accept, and the driver's phone classifies the music in the car as Lively, Chill, or Quiet (Section~\ref{sec:ai}). The mood is applied as a filter when a driver accepts a request.
+    \item \textbf{Mood-based matching}: Passengers choose the moods they accept, and the driver's phone rates the sound in the car as Lively, Calm, or Quiet (Section~\ref{sec:ai}). The mood is applied as a filter when a driver accepts a request.
     \item \textbf{Ride Tokens and CES points}: For student drivers, the system tracks accumulated Ride Tokens and converts them into CES points (Section~\ref{sec:tokens}), which rewards their contribution to shared transportation.
     \item \textbf{Emergency alert}: The application provides an alert that records the event and notifies administrators. It should not be described as a direct connection to emergency responders.
     \item \textbf{Account verification and administration}: Registration requires verification and administrative review. Administrators can review registrations, manage users and ride points, review Ride Token claims, set the fuel price and semester period that drive the Ride Token system, and examine reports and ride records.
@@ -135,11 +135,11 @@ Table~\ref{tab: tools} lists the tools and technologies used.
 
         Reliability \& Security & Firebase Crashlytics, connectivity\_plus, Firebase App Check, Firebase Security Rules & Crash reporting, offline indicator, app verification, and role-based access to data and uploaded documents. \\ 
         
-        Mood-Based AI System & TensorFlow Lite + Firebase + Librosa & Classifies music environment in the driver’s car (Lively, Chill, Quiet) using audio features and a CNN model. Matching is improved by aligning driver mood with rider preference. \\ 
+        Mood-Based AI System & YAMNet (TensorFlow Lite) + x-vector (ONNX) + Firebase & Rates the arousal of the sound in the driver's car as Lively, Calm, or Quiet. YAMNet tells speech, music, and neither apart, and a speech head or a music head rates the arousal. Matching is improved by aligning the driver's mood label with the rider's preference. \\ 
         
-        Audio Processing & Librosa (Google Colab, training) and an equivalent Dart feature extractor (on-device) & Extracts the audio features (40 MFCCs, RMS energy and onset strength) used to train the CNN and, on the device, to classify the ride audio in real time. \\      
+        Audio Processing & Google Colab (training of the heads) and on-device inference in Flutter & The heads are trained in Colab on RAVDESS and DEAM and exported as small files. On the device, 5.295-second windows of 16~kHz audio are converted in memory and passed to the models. \\      
         
-        Model Deployment & TensorFlow Lite (model bundled with the app) & Allows lightweight, on-device inference for real-time classification. The model ships inside the application, so updating it requires an app update. \\ 
+        Model Deployment & TensorFlow Lite and ONNX models, and head files, bundled with the app & Allows on-device inference with no connection. The models ship inside the application, so updating them requires an app update. \\ 
 
                 Pre-release Distribution & Firebase App Distribution & Delivers Android test builds to invited UAT testers by email, without an app store listing (Section~\ref{sec:distribution}). Android Studio and Xcode build and install the Android and iOS apps directly on testing devices (Section~\ref{sec:install}). \\
 
@@ -155,45 +155,87 @@ The exact availability of platform services and notifications should be reported
 
 \section{Mood-based AI Matching System}
 \label{sec:ai}
+A mood-based artificial intelligence (AI) is integrated into ride matching. It listens to the sound inside the driver's vehicle on the driver's phone, reports one label at a time, and the label is matched with the moods that the passenger accepts. This section presents the AI from the requirements and the theoretical design down to its implementation, and then the plan for evaluating it. The results are in Section~\ref{sec:ai-results}. The backend and device architecture are in Section~\ref{sec:tools}.
 
-A mood-based artificial intelligence (AI) is integrated into ride matching. It classifies the sound inside the driver’s vehicle on the driver’s phone, and the result is matched with the mood that the passenger prefers. It is designed to operate within mobile constraints and uses Firebase and TensorFlow Lite for deployment (Section~\ref{sec:tools} describes the backend and device architecture).
+\subsection{Purpose and Requirements}
+\label{sec:ai-purpose}
+The AI rates the arousal, which is the energy, of the sound inside the vehicle and reports it as one of three moods. In this study, mood refers to the energy of the sound and not to the emotional state of a driver or passenger, and the AI does not judge anyone's mood.
+\begin{itemize}
+    \item \textbf{Lively:} high-energy music or speech.
+    \item \textbf{Calm:} low-energy music or speech.
+    \item \textbf{Quiet:} no music or speech event, such as silence, engine noise, air-conditioner noise, or passing traffic.
+\end{itemize}
+Passengers choose the moods they accept according to the ride they want: Quiet for a silent ride, for example to study; Calm for calm music or soft talk; and Lively for high-energy music or talk. These ride atmospheres are assumptions of the proponents, because no survey of music preferences was conducted. They are consistent with the studies in Section~\ref{sec:lit-music}~\cite{north2004uses,constine2019uber}. Speech receives a mood in the same way as music, because a driver may play a podcast or talk radio, and a car with a podcast would otherwise read as Quiet and be matched with a passenger who wants a quiet ride. The definitions rest on the studies of Chapter~2 and on the measurements of Chapter~4, because no external experts were available. From these purposes, the AI must meet the requirements in Table~\ref{tab:ai-req}.
 
-\textbf{The three moods.} The AI classifies the energy level of the sound inside the vehicle into one of three levels called moods: Quiet, Chill, or Lively. In this study, mood refers to the energy level of the sound and not to the emotional state of a driver or passenger. Quiet means little or no sound. Chill means calm sound of low to moderate energy. Lively means high-energy sound. The three levels follow the arousal (energy) dimension that is used to describe music emotion~\cite{panda2023audio}. In the training clips, the median loudness is $-31.3$ dB for Quiet, $-17.8$ dB for Chill, and $-15.2$ dB for Lively (Table~\ref{tab:ai-profile}), so Chill and Lively overlap in loudness and are separated by more than loudness alone (Section~\ref{sec:ai-profile}). Passengers choose the moods they accept according to what they want from the ride: Quiet for a silent ride, for example to study or for passengers who simply like quiet rides; Chill for calm music; and Lively for high-energy music. These ride atmospheres are assumptions of the proponents, because no survey of music preferences was conducted. They are consistent with the studies reviewed in Section~\ref{sec:lit-music}~\cite{north2004uses,constine2019uber}. Each training clip was assigned to a mood from its genre or mood tags (Table~\ref{tab:ai-sources}), and the AI learned each mood from the color, loudness, and rhythm of the sound (Section~\ref{sec:ai-features}). The measured profile of each mood is reported in Section~\ref{sec:ai-profile}. Because no external experts were available, the definitions rest on published studies and on these measurements.
+\begin{table}[htbp]
+    \centering
+    \caption{Requirements of the mood AI}\label{tab:ai-req}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|c|>{\raggedright\arraybackslash}p{.80\textwidth}|}
+        \hline
+        \textbf{No.} & \textbf{Requirement} \\
+        \hline
+        R1 & Rate the energy of the sound in the car as Lively, Calm, or Quiet. \\
+        \hline
+        R2 & Rate music and speech on the same axis. \\
+        \hline
+        R3 & Run on the driver's phone and work without an internet connection. \\
+        \hline
+        R4 & Keep the audio on the phone: listen only while the driver is available, never on a motorcycle, and store and send only the mood label. \\
+        \hline
+        R5 & Follow the sound of the car without the label flickering. \\
+        \hline
+        R6 & Never stop a ride: an unknown or missing label must not block a match. \\
+        \hline
+    \end{tabular}
+\end{table}
 
-\textbf{Why audio.} The auditory environment was chosen as the matching attribute for three reasons. First, the driver’s phone can sense it automatically while the driver is available, without extra input from the driver. Second, it can be processed on the phone, so no recording is stored or transmitted and only the resulting mood tag is saved, which fits the on-device approach reviewed in Section~\ref{sec:lit-ondevice}~\cite{zhao2022survey}. Third, a compact neural network can classify it within mobile constraints~\cite{lane2015deep}. A driver-chosen tag would be simpler, but it depends on the driver remembering to update it and reporting it honestly, whereas audio reflects what is playing at the time. The other alternatives that were weighed are listed in Section~\ref{sec:ai-choices}.
+\subsection{Theoretical Design}
+\label{sec:ai-theory}
+\textbf{Why audio.} The sound in the car was chosen as the matching attribute for three reasons. The driver's phone can sense it automatically while the driver is available, without extra input. It can be processed on the phone, so no recording is stored or sent, which fits the on-device approach reviewed in Section~\ref{sec:lit-ondevice}~\cite{zhao2022survey}. Small models can classify it within mobile constraints~\cite{lane2015deep}. A driver-chosen tag would be simpler, but it depends on the driver remembering to update it and reporting it honestly, whereas audio reflects what is playing at the time.
+
+\textbf{Why arousal.} Studies of affect, environments, and music describe sound on an arousal axis~\cite{russell1980circumplex,russell1980environments,panda2023audio}, and no study gives loudness or tempo cutoffs for a vehicle (Section~\ref{sec:lit-audio}). Arousal also applies to speech and music alike (R2).
 
 \textbf{Why three moods.} The proponents weighed three levels against two levels, four or five levels, music genres, emotion categories such as happy and sad, and a continuous energy score. Three levels were chosen for four reasons.
-
 \begin{enumerate}
-    \item \textbf{A passenger must find a driver quickly.} The more moods there are, the fewer available drivers fall in each one, so the chance that at least one of them matches a passenger falls. This is the principle of thickness (Section~\ref{sec:lit-music})~\cite{roth2008market}. Table~\ref{tab:ai-chance} shows the effect when the available drivers are spread evenly over the moods and the passenger accepts one mood. The values are illustrative, since real tastes are uneven, and a passenger can also select more than one mood or No Preference, which raises the chance.
-    \item \textbf{People agree less on finer categories.} As reviewed in Section~\ref{sec:lit-music}, people agree less as mood categories become finer~\cite{hu2008mirex,gomez2019emotions}, and low agreement limits how well a model can learn. The model of this study already confuses Chill and Lively more than any other pair (Section~\ref{sec:ai-perf}), so more levels would add errors.
+    \item \textbf{A passenger must find a driver quickly.} The more moods there are, the fewer available drivers fall in each one, so the chance that at least one matches a passenger falls. This is the principle of thickness~\cite{roth2008market}. Table~\ref{tab:ai-chance} shows the effect when the drivers are spread evenly over the moods and the passenger accepts one mood. The values are illustrative, since real tastes are uneven, and a passenger can also select more than one mood or No Preference, which raises the chance.
+    \item \textbf{People agree less on finer categories.} Agreement falls as mood categories become finer~\cite{hu2008mirex,gomez2019emotions}, and low agreement limits how well a model can match human ratings.
     \item \textbf{Small mood sets are standard.} The studies of Section~\ref{sec:lit-music} used small sets of mood clusters~\cite{hu2008mirex,hu2007simplified}.
-    \item \textbf{Each level matches a passenger’s choice.} The three levels match a silent ride, calm music, and high-energy music. Two levels would place a silent ride and calm music together, so a passenger who wants silence could be matched with a driver who plays music.
+    \item \textbf{Each level matches a passenger's choice.} Two levels would place a silent ride and calm sound together, so a passenger who wants silence could be matched with a driver who plays music or talk.
 \end{enumerate}
 
 \begin{table}[htbp]
     \centering
-    \caption{Chance that a passenger finds at least one matching driver}\label{tab:ai-chance}
+    \caption{Chance that a passenger finds at least one matching driver, $1-(1-1/k)^n$ for $n$ available drivers and $k$ moods}\label{tab:ai-chance}
     \small
-    \setlength{\tabcolsep}{4pt}
     \renewcommand{\arraystretch}{1.2}
     \begin{tabular}{|l|c|c|c|}
         \hline
-        \textbf{Moods ($k$)} & \textbf{3 drivers available} & \textbf{5 drivers available} & \textbf{10 drivers available} \\
+        \textbf{Moods ($k$)} & \textbf{3 drivers} & \textbf{5 drivers} & \textbf{10 drivers} \\
         \hline
         2 & 88\% & 97\% & 99.9\% \\
+        \hline
         3 (this study) & 70\% & 87\% & 98\% \\
+        \hline
         5 & 49\% & 67\% & 89\% \\
+        \hline
         10 (for example, genres) & 27\% & 41\% & 65\% \\
         \hline
     \end{tabular}
 \end{table}
 
-The chance is $1 - (1 - 1/k)^n$ for $n$ available drivers and $k$ moods.
+Genres were rejected because they split the drivers into groups that are too small (Table~\ref{tab:ai-chance}) and a genre is not the same as energy. Emotion categories describe people, which a microphone cannot measure. A continuous energy score is harder for a passenger to choose from and is left for future work.
 
-The other alternatives were rejected for specific reasons. Genres split the drivers into groups that are too small (Table~\ref{tab:ai-chance}), and a genre is not the same as energy. Emotion categories describe people, and a microphone cannot measure them. A continuous energy score is harder for a passenger to choose from, so it is left for future work.
+\textbf{Two stages, one head for each kind of sound.} A model of arousal transfers within one kind of sound but largely fails across kinds of sound~\cite{zhang2026generalisation}, and arousal is shared between speech and music only in part~\cite{coutinho2014transfer}. The design therefore first tells what kind of sound a window holds, and then applies the arousal head of that kind, so that each head is used only on the kind of sound it was trained on.
 
-\textbf{From the idea to the build.} The moods and the reasons above are the idea of the AI. The idea sets what the AI must do: tell the three moods apart from sound alone, run on the driver’s phone without internet and without storing audio, follow the sound of the car without flickering, and never stop a ride. The rest of Section~\ref{sec:ai} shows how each need was met, in the order of the build. Figure~\ref{fig:ai-flow} shows the whole flow, and Table~\ref{tab:ai-build} lists the steps.
+\textbf{A stable label.} Rating one window at a time gives a label that can flip on a single odd window. The stored label therefore changes only after two identical new labels in a row, a simple form of the two-threshold rule that is used to stop unstable labels from flipping~\cite{cances2019postprocessing}.
+
+\textbf{A fail-open filter.} The AI is an optional layer on the ridesharing function, so it must not be able to stop a ride (R6). A request is refused on mood grounds only when the driver's label is known and the passenger has chosen a mood set that does not include it. Excluding every driver whose label is unknown would block rides whenever the classifier is unsure or the microphone is unavailable, and it would thin the pool of drivers. Ranking compatible drivers higher would limit the cost of a wrong label, but it would show passengers drivers whose mood they did not choose, so it is recommended for future work (Section~\ref{sec:recs}).
+
+\subsection{System Overview}
+\label{sec:ai-overview}
+Figure~\ref{fig:ai-flow} shows the flow. The microphone gives a continuous stream that is cut into windows. For each window, the sound-type step decides between speech, music, and neither (Section~\ref{sec:ai-window}). The head of that kind of sound gives an arousal reading and a cutoff turns it into Lively or Calm (Section~\ref{sec:ai-heads}). The confirm rule updates the stored label, which is saved in the driver's availability record (Section~\ref{sec:ai-runtime}). The matchRide function compares the stored label with the moods the passenger accepts (Section~\ref{sec:moodmatch}). Everything before the saved label runs on the phone.
 
 \begin{figure}[htbp]
     \centering
@@ -202,196 +244,101 @@ The other alternatives were rejected for specific reasons. Genres split the driv
     \label{fig:ai-flow}
 \end{figure}
 
-{
-\small
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.2}
-\begin{longtable}{|>{\centering\arraybackslash}p{.06\textwidth}|>{\raggedright\arraybackslash}p{.30\textwidth}|>{\raggedright\arraybackslash}p{.40\textwidth}|>{\raggedright\arraybackslash}p{.12\textwidth}|}
-\caption{From the idea to the build}\label{tab:ai-build}\\
-\hline
-\textbf{Step} & \textbf{What the idea needs} & \textbf{How it was built} & \textbf{Section} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Step} & \textbf{What the idea needs} & \textbf{How it was built} & \textbf{Section} \\
-\hline
-\endhead
-\endfoot
-1 & Examples of each mood & GTZAN, MTG-Jamendo, ESC-50, and generated noise, cut into 10-second segments, labeled by genre or tag, and augmented & \ref{sec:ai-dataset}, \ref{sec:ai-augment} \\
-\hline
-2 & A description of the energy of sound that a phone can compute & A $42 \times 431$ table of color (MFCC), loudness (RMS), and rhythm (onset strength) & \ref{sec:ai-features} \\
-\hline
-3 & A classifier small enough for the phone & A CNN trained in Colab and converted to TensorFlow Lite & \ref{sec:ai-model} \\
-\hline
-4 & The same numbers on the phone as in training & A Dart feature extractor checked against Librosa & \ref{sec:ai-align} \\
-\hline
-5 & A mood that follows the sound of the car without flickering, and no stored audio & A 10-second capture every 20 seconds, the average of five readings, and a moodTag saved in Firestore & \ref{sec:ai-runtime} \\
-\hline
-6 & A use of the mood that never blocks a ride & A fail-open mood filter in matchRide & \ref{sec:moodmatch} \\
-\hline
-7 & Fixed rules for when detection and matching apply & Conditions of detection and of the driver’s acceptance (Tables~\ref{tab:ai-detect} and~\ref{tab:ai-accept}) & \ref{sec:ai-conditions} \\
-\hline
-8 & Evidence that it works & Held-out clips, nine real songs, the feature check, app tests, and the measured profile of the moods & \ref{sec:ai-eval} \\
-\hline
-9 & Reasons for each choice against its alternatives & Table~\ref{tab:ai-choices} & \ref{sec:ai-choices} \\
-\hline
-\end{longtable}
-}
+The basis of every value is stated where it is introduced as a study, a range that studies give, or a choice of the proponents with its reason, because studies justify methods and axes far more often than exact constants such as window lengths and cutoffs.
 
-\textbf{Changes from the proposal.} The proposal named the high-energy mood Loud, described Loud and Chill by ranges of loudness (dB) and tempo (BPM), and set the update interval at 30 seconds. In the build, the high-energy mood is called Lively; the CNN learns the moods from labeled clips instead of fixed loudness and tempo ranges, because tempo does not separate the moods (Section~\ref{sec:ai-profile}); and the AI updates every 20 seconds (Section~\ref{sec:ai-runtime}).
-
-\subsection{Dataset Composition and Preparation}
-\label{sec:ai-dataset}
-
-The mood classification model was trained on a combination of labeled audio datasets assembled to represent the three moods. Table~\ref{tab:ai-sources} shows the sources and how their clips were assigned to each mood.
+\subsection{Data Sources}
+\label{sec:ai-data}
+The AI uses two pretrained models and two small heads that the proponents trained. YAMNet~\cite{plakal2019yamnet}, a sound-event model trained on AudioSet~\cite{gemmeke2017audioset}, and an x-vector speaker-recognition model~\cite{snyder2018xvectors} were not trained by the proponents. The heads were trained on the data of Table~\ref{tab:ai-sources}, and the other sets were used only for tuning and testing.
 
 \begin{table}[htbp]
     \centering
-    \caption{Audio clips used for each mood}\label{tab:ai-sources}
+    \caption{Data sources and their use}\label{tab:ai-sources}
     \small
-    \setlength{\tabcolsep}{4pt}
     \renewcommand{\arraystretch}{1.2}
-    \begin{tabular}{|>{\raggedright\arraybackslash}p{.12\textwidth}|>{\raggedright\arraybackslash}p{.62\textwidth}|>{\centering\arraybackslash}p{.10\textwidth}|}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.17\textwidth}|>{\raggedright\arraybackslash}p{.15\textwidth}|>{\raggedright\arraybackslash}p{.46\textwidth}|>{\raggedright\arraybackslash}p{.12\textwidth}|}
         \hline
-        \textbf{Mood} & \textbf{Source} & \textbf{Clips} \\
+        \textbf{Use} & \textbf{Source} & \textbf{Content} & \textbf{Licence} \\
         \hline
-        Lively & GTZAN: metal, rock, disco (300). Jamendo: tags energy, party, upbeat, powerful, action, heavy, fast, dance (300) & 600 \\
+        Speech head, training & RAVDESS~\cite{livingstone2018ravdess} & 1,440 speech files from 24 actors; 1,248 clips are used after the calm clips are left out & CC BY-NC-SA 4.0 \\
         \hline
-        Chill & GTZAN: classical, blues, country, jazz, reggae, hip hop, pop (301). Jamendo: tags relaxing, calming, meditative, soft, peaceful, mellow, ambient, chillout (300) & 601 \\
+        Music head, training & DEAM~\cite{aljanaki2017deam} & 1,744 excerpts of 45 seconds, cut into 15,696 windows of 5.295 seconds (about 9 for each song), each labeled with the mean arousal of its song on a scale of 1 to 9 & CC BY-NC-SA 4.0 \\
         \hline
-        Quiet & ESC-50: rain, wind, crickets, engine, sea waves, crackling fire, chirping birds, water drops (320). Generated traffic and cabin noise (300) & 620 \\
+        Music head, held-out test & PMEmo~\cite{zhang2018pmemo} & 767 chorus clips, never used for training & CC BY-NC-SA 4.0 \\
+        \hline
+        Sound-type cutoffs, mixing, and noise tests & MUSAN~\cite{snyder2015musan} & Speech, music, and noise recordings, with no arousal ratings, so it was not used to train a head & CC BY 4.0 \\
         \hline
     \end{tabular}
 \end{table}
 
-GTZAN~\cite{tzanetakis2002}, a widely used benchmark dataset of 30-second music clips in ten genres, served as the base source for the Lively and Chill classes, consistent with its established use in CNN-based genre and mood classification research~\cite{zhang2025music,hubert2025mood}. However, GTZAN alone proved insufficient: its genre categories (metal, rock, disco) reflect an earlier era of music production and do not consistently capture contemporary genres such as trap, EDM, and modern pop. An earlier version of the model that was trained mostly on GTZAN classified none of the three Lively real-world songs correctly (Section~\ref{sec:ai-data}). To address this, tracks from MTG-Jamendo~\cite{bogdanov2019} were retrieved via its public API, filtered using mood and theme tags, and mapped to the system’s target moods. For the Quiet class, real ambient and environmental clips from ESC-50~\cite{piczak2015} were combined with synthetically generated traffic and cabin-noise samples, following prior work showing that MFCC and log-Mel features from ESC-50 are effective CNN inputs~\cite{gupta2024environment}. The eight ESC-50 categories used were rain, wind, crickets, engine, sea waves, crackling fire, chirping birds, and water drops, 40 clips each, which are non-musical sounds without a melody. Together with 240 synthetic clips of white, pink, and brown noise and 60 synthetic traffic clips, they gave 620 Quiet clips, close to the 600 and 601 clips of the other two classes. The effect of each category on the result was not tested, and some of them, such as sea waves and crackling fire, are not typical sounds of a vehicle cabin. No data set of recordings made inside vehicles could be found, and recording in a real vehicle would require leaving the engine idling for long periods, which uses fuel. The proponents therefore used synthetic cabin noise and the ESC-50 ambient sounds as an approximation of the steady, broadband sound inside a cabin, which resembles white, pink, or brown noise. This is an assumption that was not verified against real vehicle recordings (Section~\ref{sec:ai-limits}), and recording inside real vehicles is recommended for future work (Section~\ref{sec:recs}).
+DEAM supplies music that people rated for arousal, and RAVDESS supplies speech by actors who read two fixed sentences in several emotions (Section~\ref{sec:lit-audio}). RAVDESS is acted speech and not natural speech, which is a limit of the speech head (Section~\ref{sec:ai-limits}). The best-matching speech data, MSP-Podcast, needs an agreement signed by an institution, and the proponents did not pursue it. PMEmo is licensed for non-commercial use only, which fits a non-commercial thesis, and it is used for evaluation only. The audio of the sets is not part of the application.
 
-The GTZAN genres were assigned to moods when the classifier was developed, by genre name: metal, rock, and disco to Lively, and the other seven genres to Chill. The assignment was not based on measured energy, so it is a simplification, because a genre is not the same as energy, and a genre such as hip hop or pop can be calm or energetic depending on the artist. The Jamendo tags were used as given, and no listener checked either set of labels. The effect of the genre assignment is examined in Sections~\ref{sec:ai-profile} and~\ref{sec:ai-limits}.
+\subsection{Window and Sound-Type Step}
+\label{sec:ai-window}
+\textbf{Window.} The AI rates one window of audio at a time. A window is 84,720 samples at 16~kHz, which is 5.295 seconds and exactly 10 YAMNet frames (each 0.975 seconds long, with a new one every 0.48 seconds), the window on which the cutoffs of the sound-type step were tuned. It is slightly above the range of 1 to 5 seconds that studies report for arousal~\cite{sun2023segmented}, so its basis is a range from a study, set together with the update interval (Section~\ref{sec:ai-results}), and not a value that a study proves best. Windows follow each other back to back.
 
-Each source track or recording was cut to a 30-second window and segmented into three 10-second segments at 22,050 Hz in mono; the 5-second ESC-50 recordings were looped to fill the window. The 10-second segment is the length of audio that the AI reads at one time (Section~\ref{sec:ai-runtime}). To keep segments from the same recording from appearing in more than one set, whole source clips were assigned to the training, validation, and test sets before any augmentation, using a 70/15/15 split by source clip with a fixed seed. This gave 1,275 training, 273 validation, and 273 test clips across the three classes. An earlier version of the split assigned segments instead of clips, so segments of the same clip could appear in both the training and test sets. The proponents found this problem and replaced it with the split by source clip described above.
+\textbf{Sound type.} YAMNet scores the window and gives, for each of its 10 frames, a score for each of its 521 sound classes and an embedding of 1,024 numbers. The speech score is the mean over the frames of class 0 (Speech), and the music score is the mean of class 132 (Music). A window holds speech when the speech score is at least 0.15, and music when the music score is at least 0.20. The cutoffs were found by a search on MUSAN tuning data, in line with the practice of setting thresholds on validation data~\cite{cances2019postprocessing}, and they lie on a plateau: any value from 0.10 to 0.30 scored within 0.01 of the best (Section~\ref{sec:ai-results}). The YAMNet file that runs in the application is a TensorFlow Lite model of 15.0~MB that uses only the built-in operations of the runtime.
 
-\subsection{Data Augmentation}
-\label{sec:ai-augment}
+\textbf{Decision rule.} Speech is checked first:
+\begin{enumerate}
+    \item If the speech score is at least 0.15, the speech head decides, and the label is Lively or Calm.
+    \item Otherwise, if the music score is at least 0.20, the music head decides, and the label is Lively or Calm.
+    \item Otherwise, the label is Quiet.
+\end{enumerate}
 
-To offset class imbalance and limited dataset size, augmentation was applied to the training set to raise each class to 1,400 segments. This follows prior findings that augmentation substantially improves CNN performance on small audio datasets~\cite{ba2025music,salamon2017deep,lin2023cnn}. In one of these studies, a CNN sound classifier reached 63\% accuracy without augmentation and 97\% with it~\cite{lin2023cnn}. Four techniques were implemented: pitch shifting ($\pm 2$ semitones), time stretching (0.9$\times$ to 1.1$\times$), noise injection (20 to 40 dB signal-to-noise ratio), and volume scaling (0.7$\times$ to 1.3$\times$). They were chosen because they change how a clip sounds without changing its energy level, as in the augmentation set of~\cite{salamon2017deep}, and they were applied in random one- or two-technique combinations per sample, following the multi-technique approach of earlier studies~\cite{rezaul2024enhancing,koerich2021cnn}. Augmentation was applied only after the split by source clip, and every augmented segment was generated from a training segment, so no copy of a validation or test clip exists in the training data. The validation and test sets contain only unmodified audio. In total, 375 of the 4,200 training segments are augmented (140 Lively, 137 Chill, and 98 Quiet).
+\textbf{Mixed audio.} The pipeline does not separate one source from the other. When a window holds both, the speech is rated and the music is not. The order is a choice of the proponents. No study measures which source should be rated when both are clearly audible, and the literature gives only indirect support: listeners rank speech among the most important sounds, and models built for a single source fail on mixtures~\cite{liu2025salience,laugs2020mixed}. Music that is more than 36.4~dB below the speech is treated as inaudible, following the lowest level at which background music was still barely audible in television~\cite{batlleroca2023background}.
 
-\subsection{Feature Extraction}
-\label{sec:ai-features}
-
-The AI does not read raw audio. Using Librosa~\cite{mcfee2015librosa}, each 10-second segment is converted into a table of 42 rows of numbers, called features, measured at 431 time frames, one about every 23 milliseconds (a window of 2,048 samples that moves forward 512 samples at a time). The features describe three things about the sound: its color, its loudness, and its rhythm. The sampling rate (22,050 Hz), the window (2,048 samples), the step (512 samples), and the 128 mel bands are the default settings of Librosa~\cite{mcfee2015librosa}; the number of coefficients (40) is a choice of the proponents.
-
-\textbf{Color (MFCC).} Mel-frequency cepstral coefficients~\cite{davis1980comparison} describe how the energy of a sound is spread across frequencies in the way the human ear hears them. Each window is converted to a spectrum, the spectrum is grouped into 128 mel-scaled bands and converted to decibels, and a discrete cosine transform keeps the first 40 coefficients. This gives 40 rows.
-
-\textbf{Loudness (RMS).} Root mean square energy measures how strong the signal is in each window. Equation~(\ref{eq:rms}) gives the RMS of window $t$, where $x_t(n)$ are the $N$ samples of that window. This gives 1 row.
-
-\begin{equation}
-    RMS_t = \sqrt{\frac{1}{N}\sum_{n=0}^{N-1} x_t(n)^2}
-    \label{eq:rms}
+\subsection{Arousal Heads}
+\label{sec:ai-heads}
+\textbf{Form.} Each head is a linear layer on a frozen embedding, which is the standard way to use a pretrained embedding~\cite{niizumi2023byola,koh2021embeddings}. A head reads the embedding $x$ of a window and gives one arousal reading $r$ as in Equation~(\ref{eq:head}), where $x_j$ is feature $j$ of the embedding, $\mu_j$ and $s_j$ are the mean and the scale of that feature in the training data, $w_j$ is its coefficient, and $b$ is the intercept. Both heads compute the same sum, and only their numbers differ.
+\begin{equation}\label{eq:head}
+    r = b + \sum_j \frac{x_j - \mu_j}{s_j}\, w_j
 \end{equation}
 
-\textbf{Rhythm (onset strength).} Onset strength measures how quickly the sound changes from one window to the next, so it rises when a new beat, note, or sound begins. Equation~(\ref{eq:onset}) gives the onset strength of window $t$, where $S_t(m)$ is the mel spectrum in decibels of band $m$ and $M$ is the number of bands. Only increases are counted. This gives 1 row.
+\textbf{Training.} Training was done in Google Colab, and the numbers were exported to files that the application bundles. Each head is a regularized linear regression, trained on labels that people or published anchors give, so nothing in the AI is clustered or learned without labels.
 
-\begin{equation}
-    O(t) = \frac{1}{M}\sum_{m=1}^{M} \max\left(0,\; S_t(m) - S_{t-1}(m)\right)
-    \label{eq:onset}
-\end{equation}
+\textbf{Speech head.} The embedding is the 512 numbers that the x-vector model gives for the raw audio of one window. The x-vector was chosen because speaker-recognition embeddings beat YAMNet for emotion categories~\cite{phukan2023embeddings}, and the choice was checked against two other embeddings (Section~\ref{sec:ai-results}). The head was trained on the 1,248 RAVDESS clips that remain after the calm clips are left out, with a regularization strength of 100. Each emotion was turned into an arousal value with the anchors of Zhou et al.~\cite{zhou2023arousal}: angry 0.59, fearful 0.60, happy 0.51, disgust 0.35, sad $-0.27$, surprised 0.67, and neutral 0. RAVDESS calm has no published anchor, so those clips were left out and no value was invented for them. The cutoff is 0, the neutral origin of the axis: a reading above 0 is Lively and any other reading is Calm. Validation leaves one actor out at a time~\cite{antoniou2023speech}, so no actor in a test was seen in training.
 
-Stacking the 40 + 1 + 1 rows gives a $42 \times 431$ matrix for every segment, which is the input of the model.
-
-\textbf{Why these features.} MFCC, RMS, and onset strength represent timbre, dynamics, and rhythm, which music-emotion research links to the energy of music (Section~\ref{sec:lit-music})~\cite{panda2023audio}. A multi-feature input follows the studies of Section~\ref{sec:lit-audio}~\cite{zhang2025music,hubert2025mood,rezaul2024enhancing}. The alternatives were a spectrogram image alone, additional descriptors such as the zero-crossing rate, and tempo in beats per minute. Tempo was not used because a computed energy score was a clearer indicator of arousal than tempo in a large study (Section~\ref{sec:lit-music})~\cite{north2018energy}, and because measuring it requires finding the beats, whereas onset strength carries rhythm information without that step. In the feature test (Section~\ref{sec:ai-compare}), MFCC alone reached 85.6\% and adding RMS raised it to 87.2\%, whereas onset strength added no measurable accuracy.
-
-\subsection{Model Architecture and Training}
-\label{sec:ai-model}
-
-The $42 \times 431$ matrices train a CNN with four convolutional blocks (32, 64, 128, and 128 filters, $3 \times 3$ kernels, ReLU activation, same padding). Each block is followed by max-pooling and batch normalization. The blocks are followed by global average pooling, dropout, a 64-unit dense layer, and a softmax output over the three classes~\cite{zhang2025music,gupta2024environment}, which gives the probability of each mood. The model is trained with the Adam optimizer and sparse categorical cross-entropy loss for up to 50 epochs, with balanced class weights, early stopping, and learning-rate reduction on plateau. Figure~\ref{fig:ai-flow}, given at the start of Section~\ref{sec:ai}, shows where the model sits in the flow of the AI.
-
-\textbf{How the network works.} A convolutional layer slides small $3 \times 3$ filters over the $42 \times 431$ feature table and responds to local patterns of color, loudness, and rhythm over time. The first layers find simple patterns and the deeper layers combine them into larger ones, which is why the number of filters grows from 32 to 128. Max-pooling keeps the strongest response in each small region and halves the table, which makes the result less sensitive to small shifts in time or frequency, and batch normalization rescales the outputs of a layer to keep training stable. Global average pooling reduces each filter to one number, which keeps the network small. Dropout switches off 30\% of the units at random during training to limit overfitting, and the softmax output turns the three final scores into probabilities that add up to one. Balanced class weights keep a class with fewer clips from being ignored, and early stopping ends training when the validation accuracy stops improving.
-
-\textbf{Why a CNN.} CNNs over MFCC-based features classify music genre~\cite{zhang2025music,koerich2021cnn}, music mood~\cite{hubert2025mood}, and environmental sound~\cite{gupta2024environment}, and a CNN of this size is small enough to run on a phone. The alternatives were rules based on loudness, rhythm, or tempo thresholds, a decision tree, logistic regression, and a random forest on hand-made summary features, and larger pretrained models. Larger models such as the transformer in~\cite{hubert2025mood} are far bigger than a CNN of about 1 MB and would strain a phone. Pretrained models were not tested. On the same test clips, no single-feature rule exceeded 61\%, and models using MFCC summaries came within about 1 to 4 points of the CNN (Section~\ref{sec:ai-compare}).
-
-\textbf{Choosing a run.} Because CNN training can converge to different local optima, training is repeated up to five times, each run using a different random seed. After each run, the model is checked on the validation set and on a four-song real-world sanity check with known expected labels. The first run that classifies all four songs correctly and has the highest validation accuracy so far is selected, and training stops; if no run meets both conditions, the run with the highest validation accuracy is kept. This is because validation accuracy alone was found insufficient to guarantee real-world generalization. In the final training, validation accuracy ranged from 82.54\% to 85.47\% across the five runs (Section~\ref{sec:ai-perf}), so a single run could have been a weak one.
-
-\textbf{Conversion for the phone.} The selected model is converted to TensorFlow Lite for on-device inference, so no audio is transmitted off the user’s phone. The first conversion compressed the model (quantization) to about 0.25 MB, but that file could not be loaded on iOS, because the TensorFlow Lite runtime bundled with the iOS build does not support the operations that the compression produces. The model was therefore converted again without compression. The final file is about 1 MB, loads on both Android and iOS, and reproduced the outputs of the trained model to within about $10^{-7}$ in a check on test inputs.
-
-\subsection{On-Device Feature Extraction and Pipeline Alignment}
-\label{sec:ai-align}
-
-The Flutter/Dart on-device pipeline must reproduce the training-time MFCC, mel-filterbank, and onset-strength computations exactly. The Librosa-computed mel filterbank (128 bands $\times$ 1,025 FFT bins) is exported as a static asset and bundled with the app rather than reimplemented in Dart, and the decibel conversion and onset-strength logic are built to replicate Librosa’s computation. This prevents a mismatch between training and inference. To verify this alignment, the Dart feature extractor was compared against the Librosa reference on the same 10-second audio segment, with both sides using identical decoded samples so that only the feature computation was compared. Across all 42 feature rows, the maximum absolute difference was $3.0\times 10^{-7}$ for the MFCC rows, $2.5\times 10^{-8}$ for RMS energy, and $9.9\times 10^{-9}$ for onset strength, against MFCC values ranging from about $-115$ to 126. The Pearson correlation between the two implementations was 1.0000 for every row. These results confirm that the on-device pipeline reproduces the training-time features.
+\textbf{Music head.} The embedding is the 1,024 numbers of each of the 10 YAMNet frames of a window, pooled over the frames by the mean and by the maximum, which gives 2,048 numbers with the mean first~\cite{koh2021embeddings}. The head was trained on the 15,696 DEAM windows, each labeled with the mean arousal of its song, with a regularization strength of 1,000. The windows have the same length as the windows that the application rates. The cutoff is 5.0, the midpoint of the scale of 1 to 9: a reading above 5.0 is Lively and any other reading is Calm. It is a working value of the proponents (Sections~\ref{sec:ai-results} and~\ref{sec:ai-limits}). Validation uses 10 folds in which whole songs are held out, so the windows of one song never sit on both sides of a split.
 
 \subsection{Runtime Classification and Driver Tagging}
 \label{sec:ai-runtime}
+\textbf{Pipeline.} The whole classifier runs on the driver's phone, in Flutter, and only a mood word is sent to the server. The application cuts the audio stream into windows, converts each to numbers in memory, runs YAMNet and, when speech is present, the x-vector model, and applies the heads and the decision rule. If the previous window is still being analyzed, the next one is skipped. After an error in the stream, the application tries again after 5 seconds. If the driver denies the microphone permission, the application stops trying and no label is produced, but the driver can still go available.
 
-Audio input is collected from the driver’s device via the microphone, only while the driver is marked available. Ten-second snippets are sampled and processed entirely on the device, and no raw audio is stored or transmitted. A new classification is made every 20 seconds, so the microphone is active for about half of the time. Each classification follows these steps:
+\textbf{Confirm rule.} The label of each window is the raw label. The stored label changes only after two identical new raw labels in a row. The first raw label is taken as it is, so the screen shows ``Sensing mood'' until the first window is finished. The value of two comes from a simulation (Section~\ref{sec:ai-results}) with a target that the proponents set, and not from a study.
 
-\begin{enumerate}
-    \item Record 10 seconds of audio in mono at 22,050 Hz.
-    \item Compute the $42 \times 431$ features on the phone (Section~\ref{sec:ai-align}).
-    \item Run the model to obtain the probabilities of Chill, Lively, and Quiet.
-    \item Add the result to the five most recent classifications.
-    \item Select the mood with the highest average probability as the moodTag.
-\end{enumerate}
+\textbf{When the microphone is on.} The microphone is used only while the driver is marked available, started and stopped by the Available switch. It is never used for motorcycle drivers, because a motorcycle has no cabin to sample: no permission prompt appears and no label is written. A passenger who prefers motorcycles sees a short note in place of the mood selector, and the preference is stored as Any.
 
-The moodTag is assigned by averaging the model’s class probabilities over the five most recent classifications and selecting the class with the highest average, so a single low-confidence misclassification cannot change the tag; until five classifications have accumulated, the average is taken over those available. The moodTag is stored in the driver’s availability record in Firestore (Section~\ref{sec:tools}) as one of three values: Lively, Chill, or Quiet (stored as loud, chill, and quiet). Two further states follow from the availability record rather than being stored as values. A driver who is not available has no record (UNAVAILABLE), because going offline deletes it. A driver who is available but has not yet received a classification has a record with no moodTag (UNCLASSIFIED). The record is recreated each time a driver goes available, so a tag from an earlier trip is never carried over. The matching logic treats a missing or unreadable tag as unknown and does not block a match on it (Section~\ref{sec:moodmatch}). Mood detection is not run for motorcycle drivers, since a motorcycle has no cabin for the microphone to sample; no audio is captured and no moodTag is written, so they remain in the UNCLASSIFIED state.
+\textbf{Accept lock.} The group decided that the driver is locked to one mood, so that every passenger in the car shares the same mood preference. The lock starts when the driver accepts a request and not at pickup, so the mood that matched the first passenger cannot drift before pickup and hide the next passenger who wanted the same mood. When the lock starts, the microphone stops and the stored label stays as it was for the rest of the trip. If the driver cancels every accepted request before confirming a pickup, the lock is lifted and the microphone senses a mood afresh. Cancelling one of two accepted passengers keeps the lock, and if an accept fails, the microphone resumes. When the driver goes offline, the availability record is deleted, and a new session starts at ``Sensing mood''.
 
-Take for example a driver who has been in a quiet car and then starts playing calm jazz. The first readings after the change still lean Quiet, because the earlier readings remain in the average, and the tag changes to Chill once about three of the five most recent readings favor Chill. The first tag appears about 10 to 12 seconds after the driver becomes available, and on the emulator a switch from Quiet to Chill took about 60 seconds to show (Section~\ref{sec:ai-ondevice}).
+\textbf{What is stored and sent.} One field is written to the driver's availability record in Firestore (Section~\ref{sec:tools}): the label, stored as \texttt{loud}, \texttt{chill}, or \texttt{quiet} for Lively, Calm, or Quiet, with the time it was updated, and only when the confirmed label changes. The raw audio, the features, and the embeddings are never written to disk or uploaded. A driver who is not available has no record (UNAVAILABLE). A driver who is available but has not yet received a label has a record with no label (UNCLASSIFIED). The record is recreated each time a driver goes available, so a label from an earlier trip is never carried over.
 
-\textbf{Why 10 seconds.} The proponents chose 10 seconds as a trial value. The training clips were cut to the same length, because each 30-second source clip divides into three equal segments (Section~\ref{sec:ai-dataset}), and the model reads a fixed 431 frames, which is 10 seconds of audio. The value was tested afterward. A window of 10 seconds gives the first tag after about 10 to 12 seconds and holds about 10 to 30 beats at 60 to 180 beats per minute, whereas a longer window would delay every reading. The alternatives of 2.5, 3.3, and 5 seconds, with the readings averaged back to 10 seconds, are compared in Section~\ref{sec:ai-compare}. Their accuracy was within about 1.4 points of the 10-second window, which is within the variation between runs, so accuracy alone does not favor 10 seconds. Averaging the three readings of a 30-second clip added only about 0.4 points. Studies of segment length also report no single best length (Section~\ref{sec:lit-ondevice})~\cite{sun2023segmented,guimaraes2025segment}. The 10-second window is therefore a design choice within the range studied and not a proven optimum. The effect of shorter windows on battery use could not be measured, because the proponents did not have enough physical devices for a battery test (Section~\ref{sec:recs}).
+\textbf{Consent.} Before the operating system asks for microphone access, the application shows a plain-language dialog. It says that the application analyzes clips of about 5 seconds, that the microphone indicator stays on, including in the background, that the audio is analyzed on the phone and never recorded, saved, or uploaded, that the microphone can hear conversation in the car, and that only the mood word leaves the phone. A separate notice, ``Your music may be interrupted'', appears when the driver starts a ride. It says that the microphone can pause or lower the music, especially over Bluetooth, that the mood is locked once the driver accepts a passenger, and that the audio is processed on the phone and never uploaded.
 
-\textbf{Why every 20 seconds.} A reading every 20 seconds keeps the microphone and the model off for 10 seconds between captures, which limits battery use and processor load on the driver’s phone, and it still updates the tag about three times a minute. Battery use and processor load were not measured, so this is a design reason and not a tested result. In the simulation in Section~\ref{sec:ai-compare}, an interval of 10 seconds gave about the same accuracy but kept the microphone on all the time, and intervals of 30 and 60 seconds slowed the update to about 73 and 135 seconds.
+\textbf{Platform behavior.} Table~\ref{tab:ai-mic} gives how the microphone is handled on each platform. The pause of the music on iPhone is a known limitation that is reduced and not removed (Section~\ref{sec:ai-limits}).
 
-\textbf{Why the average of five readings.} Averaging stops one unusual reading, such as a short burst of speech or a horn, from changing the tag. The cost is a delay of about one minute before a change of sound shows (Section~\ref{sec:ai-ondevice}). The alternatives were using each reading alone, which lets the tag flip with every unusual reading, and a longer average, which is slower. In the simulation, using each reading alone gave about 89\% accuracy and 33 tag changes an hour, an average of three gave 96\% with a delay of 34 seconds and 7 changes an hour, and an average of seven gave 99.5\% with a delay of 72 seconds (Section~\ref{sec:ai-compare}).
+\begin{table}[htbp]
+    \centering
+    \caption{Microphone handling on each platform}\label{tab:ai-mic}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.17\textwidth}|>{\raggedright\arraybackslash}p{.73\textwidth}|}
+        \hline
+        \textbf{Platform} & \textbf{Behavior} \\
+        \hline
+        Android & Runs as a foreground service of the microphone type, and the microphone is closed during any rest between windows. \\
+        \hline
+        iPhone & The audio session is set to play and record, mixed with other audio, and the stream stays open between windows. It needs iOS 16 or later, because the runtime of the speech model requires it. \\
+        \hline
+        iPhone music & Other audio that is playing pauses for less than a second when the microphone starts and again when it stops, and then resumes by itself. After the microphone stops, the application tells other apps that it has released the audio session, which lets the music resume. \\
+        \hline
+    \end{tabular}
+\end{table}
 
-\subsection{Passenger-Driver Matching}
+\subsection{Matching with the Passenger's Preference}
 \label{sec:moodmatch}
+When requesting a ride, passengers select the moods they accept (any combination of Lively, Calm, and Quiet) or choose No Preference, which is stored as an empty list, with the ride request in Firestore. Mood is applied as a fail-open filter at the point of acceptance. When a driver accepts a request, the matchRide Cloud Function checks the request against the driver's stored label, using data it reads itself. A request is refused on mood grounds only when the passenger has chosen a specific subset of moods and the driver's label is known and outside that subset. A passenger with No Preference or all three moods selected, and any driver whose label is missing or unreadable, always passes. A wrong label can therefore delay a match for a passenger with a specific preference, but an unknown label never blocks one. The driver's screen applies the same check to decide which requests to show.
 
-When requesting a ride, passengers select the moods they accept (Lively, Chill, or Quiet) or choose No Preference, and this selection is stored with the ride request in Firestore. Mood is applied as a fail-open filter at the point of ride acceptance. When a driver accepts a request, the matchRide Cloud Function checks the request against the driver’s current mood tag, using data it reads itself. The request is refused on mood grounds only when the passenger has chosen a specific subset of moods and the driver’s tag is known and outside that subset. A passenger with No Preference or all three moods selected, and any driver whose tag is missing or unreadable, always passes. A misclassification can therefore delay a match for a passenger with a specific preference, but an unknown classification never blocks one.
-
-\textbf{Why a fail-open filter.} The AI is an optional layer on the ridesharing function, so it must not be able to stop a ride. The alternatives were to exclude every driver whose tag does not match, including drivers whose tag is unknown, and to rank compatible drivers higher instead of excluding the others. Excluding unknown tags would block rides whenever the classifier is unsure or the microphone is unavailable, and it would thin the pool of drivers (Table~\ref{tab:ai-chance}). Ranking would limit the cost of a wrong tag, but it would also show passengers drivers whose mood they did not choose, so it is recommended for future work (Section~\ref{sec:recs}).
-
-The function first evaluates the following hard filters, numbered as in the use-case catalogue, all of which must hold: the request is still pending (HF-7); the driver is an approved driver whose account has not been suspended (HF-1) and who is set to Available on a route direction matching the request (HF-2); the driver’s stored location is on the correct side of the geofence for that direction (outside it for inbound, inside it for outbound); at least one passenger seat remains (HF-4); and the driver is within the acceptance distance of the pickup point by straight-line distance (HF-5; Table~\ref{tab:rules-by-setting}). A passenger’s vehicle-type preference is then applied with the same fail-open rule as mood. When a passenger prefers a motorcycle, the mood selector is replaced by a short note and the mood preference is stored as Any, because motorcycles do not run mood detection. The driver can accept only the oldest pending request at that pickup point and direction (first-in, first-out, described below). For outbound trips, the driver must also have chosen a final destination. Route alignment (HF-3) is applied on the driver’s screen as a display filter, because the server stores the driver’s location but not the route, so a request is shown only when its pickup lies within the route-match distance of the remaining route (Table~\ref{tab:rules-by-setting}).
-
-Requests are served first-in, first-out. A passenger’s place in the queue is fixed by the time the passenger first joined and never resets when the passenger edits their preferences. This prevents users from gaming the queue and keeps the concurrency logic simple.
-
-Because free multi-selection of moods weakens match quality, passengers cannot widen their own mood selection. Instead, if no match is found after roughly two minutes, the system prompts the passenger to accept additional moods, and the search continues with the wider set. This balances user satisfaction and system efficiency.
-
-\subsection{Conditions of Mood Detection and Matching}
-\label{sec:ai-conditions}
-
-The mood AI follows fixed conditions, which are drawn from the app and the matchRide Cloud Function and are listed in Tables~\ref{tab:ai-detect} and~\ref{tab:ai-accept}. Table~\ref{tab:ai-detect} gives the conditions of the detection on the driver’s phone.
-
-{
-\small
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.2}
-\begin{longtable}{|>{\raggedright\arraybackslash}p{.24\textwidth}|>{\raggedright\arraybackslash}p{.66\textwidth}|}
-\caption{Conditions of mood detection}\label{tab:ai-detect}\\
-\hline
-\textbf{Condition} & \textbf{Rule} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Condition} & \textbf{Rule} \\
-\hline
-\endhead
-\endfoot
-When detection runs & Only while the driver is marked available. It stops when the driver goes offline or a trip ends. \\
-\hline
-Which vehicles & Motorcycles never run detection, because they have no cabin to record. \\
-\hline
-Capture & A 10-second mono sample at 22,050 Hz, taken at the start and then every 20 seconds. \\
-\hline
-Tag & The mood with the highest average probability over the last five readings. The first tag appears after the first reading (about 10 to 12 seconds), and a change of sound shows after about 50 to 70 seconds. \\
-\hline
-A reading that fails & The reading is skipped and the next one tries again. A model that cannot be loaded stops detection and reports an error. \\
-\hline
-What is stored & Only the mood tag and the time it was updated, in the driver’s availability record. The audio is not stored. \\
-\hline
-Driver states & A driver with no availability record is UNAVAILABLE. A driver with a record but no tag is UNCLASSIFIED. \\
-\hline
-\end{longtable}
-}
-
-Table~\ref{tab:ai-accept} gives the checks that matchRide makes, in the order it makes them, when a driver accepts a request. The first check that is not met rejects the acceptance. The mood check is one of them.
+Table~\ref{tab:ai-accept} gives the checks that matchRide makes, in order, when a driver accepts a request. The first check that is not met rejects the acceptance. The vehicle-type preference of the passenger is applied with the same fail-open rule as mood. The checks marked HF are the hard filters of the use-case catalogue. Route alignment (HF-3) is applied on the driver's screen as a display filter, because the server stores the driver's location but not the route, so a request is shown only when its pickup lies within the route-match distance of the remaining route (Table~\ref{tab:rules-by-setting}).
 
 {
 \small
@@ -408,21 +355,21 @@ Table~\ref{tab:ai-accept} gives the checks that matchRide makes, in the order it
 \hline
 \endhead
 \endfoot
-Request state & The request is still pending, is not the driver’s own, and was made in the current request format. & Rejected \\
+Request state (HF-7) & The request is still pending, is not the driver's own, and was made in the current request format. & Rejected \\
 \hline
 Request data & The request has a valid direction (inbound or outbound) and a valid pickup coordinate. & Rejected \\
 \hline
-Driver state & The driver is available, on the same direction as the request, and has a known location. & Rejected \\
+Driver state (HF-1, HF-2) & The driver is approved and not suspended, is available on the same direction as the request, and has a known location. & Rejected \\
 \hline
 Campus fence & An inbound driver is off campus, and an outbound driver is on campus. & Rejected \\
 \hline
-Seats & At least one passenger seat remains. & Rejected \\
+Seats (HF-4) & At least one passenger seat remains. & Rejected \\
 \hline
-Distance & The driver is within the acceptance distance of the pickup point in a straight line (Table~\ref{tab:rules-by-setting}). & Rejected \\
+Distance (HF-5) & The driver is within the acceptance distance of the pickup point in a straight line (Table~\ref{tab:rules-by-setting}). & Rejected \\
 \hline
-Mood & The passenger’s accepted moods are empty or include all three (Any), or the driver’s tag is unknown, or the tag is on the passenger’s list. & Rejected only when the tag is known and not on a partial list \\
+Mood & The passenger's accepted moods are empty or include all three (Any), or the driver's label is unknown, or the label is on the passenger's list. & Rejected only when the label is known and not on a partial list \\
 \hline
-Vehicle & The passenger has no preference, or the driver’s vehicle kind is unknown, or it is the kind the passenger asked for. & Rejected only when the kind is known and different \\
+Vehicle & The passenger has no preference, or the driver's vehicle kind is unknown, or it is the kind the passenger asked for. & Rejected only when the kind is known and different \\
 \hline
 Queue & The request is the oldest pending request at its queue point (first in, first out). & Rejected \\
 \hline
@@ -431,78 +378,149 @@ Destination & For an outbound trip, the driver has chosen a final destination. &
 \end{longtable}
 }
 
-The mood check fails open: an unknown tag or a passenger with no preference never blocks a ride, as explained in Section~\ref{sec:moodmatch}.
+Requests are served first-in, first-out. A passenger's place in the queue is fixed by the time the passenger first joined and never resets when the passenger edits their preferences. Passengers cannot widen their own mood selection, because free multi-selection weakens match quality. Instead, if no match is found after roughly two minutes, the system prompts the passenger to accept additional moods, and the search continues with the wider set.
 
-\subsection{Evaluation of the Mood Classifier}
+\subsection{Evaluation Plan}
 \label{sec:ai-eval}
+Table~\ref{tab:ai-verify} states how each requirement is verified, and Table~\ref{tab:ai-tests} gives the data and the method of each test. The results are in Section~\ref{sec:ai-results}. Where a published figure exists, it is reported beside the result as a reference point and not as a target, because the data differ. The tests of the application and of the matching function are part of the testing plan in Section~\ref{sec:phases}.
 
-The mood classifier was evaluated on four fronts: clips it had not seen, real-world songs, the on-device features, and the behavior of the app. The system-level mood detection tests are part of the testing plan in Section~\ref{sec:phases}.
-
-\textbf{Held-out clips.} The test set holds 819 segments from 273 clips that were never used for training or for choosing the model (270 Chill, 270 Lively, and 279 Quiet). The predicted mood of each segment was compared with the mood of its clip, and accuracy, precision, recall, and F1-score were computed for each mood. Accuracy was also measured for each clip by averaging the probabilities of its three segments, which resembles the averaging that the app does.
-
-\textbf{Evaluation measures.} Accuracy is the share of segments classified correctly. For each mood, precision is the share of the segments called that mood that really are that mood, recall is the share of that mood’s segments that were found, and the F1-score is the harmonic mean of the two. The macro F1-score averages the F1-scores of the three moods, so each mood counts equally. The confusion matrix counts how often each true mood was classified as each mood. In the audit of the clips, Spearman’s $\rho$ measures how well a feature follows the order Quiet, Chill, Lively, Cliff’s $\delta$ measures how much more often the values of one mood exceed those of another than the reverse (from $-1$ to 1), and the area under the ROC curve (AUC) is the chance that a random Lively clip has a higher value than a random Chill clip, where 0.5 means no separation.
-
-\textbf{Real-world songs.} Nine songs and sounds that were not part of any training source were downloaded from YouTube and stored on Google Drive, three for each mood. The Lively clips were three recent popular songs. The Chill clips were a jazz vocal, a podcast clip, and a song. The Quiet sounds were traffic noise, air-conditioner noise, and a motor revving. The expected mood of each was decided by the proponents before testing, and the list is shown in Appendix~\ref{app:clips}. The 10 seconds at the middle of each song were classified. The same nine songs were run on the earlier version of the model (version 3) for comparison. The nine-song check was run after model selection and was not used to select the model.
-
-\textbf{Feature check.} The on-device features were compared with the training features as described in Section~\ref{sec:ai-align}.
-
-\textbf{App tests.} The nine songs were played near the microphone of an Android emulator, and the tag shown by the app was recorded after about one minute, with detection started fresh for each song. The first classification of each song was recorded as well. The number of correct detections was also recorded on three physical devices as part of system testing (Table~\ref{tab:measure}).
-
-\textbf{Measured profile of the moods.} The feature audit used the same 1,821 clips as training, before segmentation and augmentation, and did not involve the model. For each clip, Librosa was used to measure the loudness (RMS in dB), the variation of loudness, the number of onsets per second, the mean onset strength, the spectral centroid (brightness), the spectral flatness, and the tempo. The median and the middle 50\% of each feature were summarized for each mood. Whether the moods are ordered Quiet, Chill, Lively was tested with Spearman’s rank correlation and the Kruskal-Wallis test, and each pair of moods was compared with pairwise tests with Holm correction, Cliff’s delta as the effect size, and the area under the ROC curve (AUC) for Chill versus Lively. Rank-based tests were used because the features are not normally distributed. A principal component analysis of the standardized loudness, onset rate, onset strength, brightness, and flatness checked whether one energy dimension orders the moods, and the clips were also grouped by source genre or tag.
-
-\textbf{Comparison with alternatives.} Simple models: single-feature threshold rules (with thresholds fitted on the training segments), a decision tree of depth 3, logistic regression, and a random forest were trained on seven hand-made features per segment (loudness, loudness variation, onsets per second, onset strength, spectral centroid, spectral flatness, and tempo), with and without the mean and standard deviation of each MFCC, and were scored on the same test segments as the CNN. Feature test: the CNN of Section~\ref{sec:ai-model} was trained with each of the three features alone and in pairs, for three random seeds each, without augmentation and with each feature row standardized, and the mean and standard deviation of the test accuracy were reported. Window length: the 10-second feature matrix was cut into pieces of 5, 3.3, and 2.5 seconds, a CNN was trained on the pieces, and the predictions of the pieces were averaged back to 10 seconds and over the three segments of each 30-second clip. Interval and window: readings were drawn at random from the final model’s probabilities on the test segments of each mood, and the tag was simulated for update intervals of 10 to 60 seconds and averaging windows of 1 to 10 readings, with 1,000 simulated runs per setting. The steady accuracy, the tag changes per hour, the mean time to show a new mood after a change of sound, and the share of time the microphone is on were recorded.
-
-\subsection{Design Choices and Alternatives}
-\label{sec:ai-choices}
-
-The proponents identified the alternatives in Table~\ref{tab:ai-choices} for each aspect of the AI after the design was built, and compared them using the evidence in the last column. Where the evidence is a test of the alternatives, the result is in Section~\ref{sec:ai-compare}. Evidence marked as a design reason was not tested.
+\begin{table}[htbp]
+    \centering
+    \caption{Requirements and how each is verified}\label{tab:ai-verify}
+    \small
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|c|>{\raggedright\arraybackslash}p{.46\textwidth}|>{\raggedright\arraybackslash}p{.34\textwidth}|}
+        \hline
+        \textbf{No.} & \textbf{Verified by} & \textbf{Results in} \\
+        \hline
+        R1 & Sound-type test, music head, speech head, rating check on car recordings & Sections~\ref{sec:ai-soundtype}, \ref{sec:ai-music}, \ref{sec:ai-speech}, and~\ref{sec:ai-rating} \\
+        \hline
+        R2 & Speech head, mixed audio & Sections~\ref{sec:ai-speech} and~\ref{sec:ai-mixed} \\
+        \hline
+        R3 & Models on the phones & Section~\ref{sec:ai-phones} \\
+        \hline
+        R4 & Flutter tests, system case S-F3 & Section~\ref{sec:ai-matchtests} \\
+        \hline
+        R5 & Simulation of the confirm rule and update interval & Section~\ref{sec:ai-confirm} \\
+        \hline
+        R6 & matchRide verification script, system case S-C5 & Section~\ref{sec:ai-matchtests} \\
+        \hline
+    \end{tabular}
+\end{table}
 
 {
-\footnotesize
+\small
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.2}
-\begin{longtable}{|>{\raggedright\arraybackslash}p{.14\textwidth}|>{\raggedright\arraybackslash}p{.12\textwidth}|>{\raggedright\arraybackslash}p{.18\textwidth}|>{\raggedright\arraybackslash}p{.25\textwidth}|>{\raggedright\arraybackslash}p{.17\textwidth}|}
-\caption{Design choices and the alternatives compared}\label{tab:ai-choices}\\
+\begin{longtable}{|>{\raggedright\arraybackslash}p{.12\textwidth}|>{\raggedright\arraybackslash}p{.22\textwidth}|>{\raggedright\arraybackslash}p{.36\textwidth}|>{\raggedright\arraybackslash}p{.20\textwidth}|}
+\caption{Tests of the mood AI: data, method, and measures}\label{tab:ai-tests}\\
 \hline
-\textbf{Aspect} & \textbf{Choice} & \textbf{Alternatives} & \textbf{Why the choice} & \textbf{Evidence} \\
+\textbf{Test} & \textbf{Data} & \textbf{Method} & \textbf{Measures} \\
 \hline
 \endfirsthead
 \hline
-\textbf{Aspect} & \textbf{Choice} & \textbf{Alternatives} & \textbf{Why the choice} & \textbf{Evidence} \\
+\textbf{Test} & \textbf{Data} & \textbf{Method} & \textbf{Measures} \\
 \hline
 \endhead
 \endfoot
-Matching attribute & In-car audio & Driver-chosen tag, driving style, ratings, music-app data, questionnaire & Automatic, private on the device, and describes the ride atmosphere directly & Design reason \\
+Sound-type step & MUSAN. Cutoffs tuned on fma, librivox, and free-sound; tested on jamendo, rfm, hd-classical, fma-western-art, us-gov, and sound-bible, which were never used for tuning. & Windows of 1, 3, and 5 seconds, repeated with noise added at 20, 10, 5, and 0~dB. MUSAN noise is not the noise of a car. & Average of three recalls: speech, music, and neither. \\
 \hline
-Where it runs & On the phone & Cloud server & No recording leaves the phone and no connection is needed~\cite{zhao2022survey} & Literature \\
+Music head & DEAM, and the 767 PMEmo clips, which were never used for training. & 10 folds with songs held out; the reading of a song is the mean over its windows. Three heads at the cutoff of 5.0: the shipped head (trained and read on windows), a head trained on whole excerpts and read on the excerpt, and the same head read on windows. The cutoff of 5.0 assumes that the midpoints of the DEAM scale and the PMEmo scale (0.5) correspond. & Spearman correlation, Calm found, Lively found, balanced accuracy (their average), AUC on PMEmo, bootstrap intervals. \\
 \hline
-Number of moods & Three & Two, four or five, genres, emotions, continuous score & Larger matching pools, fewer disagreements, and a match with passenger choices & Table~\ref{tab:ai-chance},~\cite{hu2008mirex,hu2007simplified,gomez2019emotions,roth2008market} \\
+Speech head & RAVDESS, 24 actors; 150 MUSAN speech clips of 10 seconds for stability. & Leave one actor out~\cite{antoniou2023speech}. Three embeddings (x-vector, ECAPA, and YAMNet with the mean and the maximum), each with a linear head and with a small network of one hidden layer of 128 units. Stability: the first window, the last window, and their mean against the whole clip. & CCC with the anchors, averaged over the actors; Calm found; Lively found; balanced accuracy. Stability measures stability and not accuracy. \\
 \hline
-Training sources & GTZAN, Jamendo, ESC-50, generated noise & GTZAN only, recordings made inside vehicles & A model trained mostly on GTZAN missed all three Lively songs, and vehicle recordings were not feasible & Measured (6 of 9 songs, then 7 of 9) \\
+Mixed audio & 150 pairs of speech and music. & The music was mixed from 12~LU above the speech down to 36.4~dB below it, and the test was repeated with RMS in place of LU to check that the finding does not depend on the measure of loudness. & How often the sound-type step hears each source; how often adding one source changes the label of the head of the other; how often the two orders give different labels. \\
 \hline
-Data split & By source clip & By segment & A split by segment lets parts of one clip fall in both sets and overstates accuracy & Problem found and corrected \\
+Confirm rule and update interval & Simulation from a saved pool of real window labels (below). & $N$ from 1 to 6, and update intervals of 5.295 and 10 seconds. & False flips, reversals, lag, accuracy. \\
 \hline
-Augmentation & Training set only & None, or before the split & Helps CNNs on small audio sets~\cite{ba2025music,salamon2017deep,lin2023cnn}, and keeps copies of test clips out of training & Literature, not tested separately \\
+Models on the phones & 10 golden clips, one Android phone, and one iPhone. & Converted models against the original models; the clips run through the application and compared with the notebook, with a tolerance of 0.001; live use in a quiet room, with music, and with speech. & Largest differences in scores, embeddings, and readings; time for each window. Timings are of debug builds and are not benchmarks. \\
 \hline
-Input window & 10 s every 20 s & 2.5 s, 3.3 s, 5 s & Holds 10 to 30 beats and keeps delay and microphone use low & Tested: accuracy within 1.4 points for 2.5 to 10 s (Section~\ref{sec:ai-compare}) \\
+Rating check & 30 recordings made inside a car (below). & Labels of the AI against the labels of two blind raters. & Cohen's kappa; Fleiss' kappa; share of agreed clips matched. \\
 \hline
-Features & MFCC, RMS, onset strength & Spectrogram only, tempo, more descriptors & Color, loudness, and rhythm relate to energy~\cite{panda2023audio} & Tested: MFCC carries most; onset strength adds none (Section~\ref{sec:ai-compare}) \\
-\hline
-Model & Small CNN & Threshold rules, decision tree, logistic regression, random forest & Learns patterns across time and frequency, and is about 1 MB & Tested: rules far worse; MFCC-summary models within 1 to 4 points (Section~\ref{sec:ai-compare}) \\
-\hline
-Choosing a run & Five seeds plus a four-song check & One run & Validation accuracy ranged from 82.54\% to 85.47\% across the five runs & Measured \\
-\hline
-Model file & Float32 & Compressed (quantized) & The compressed file failed to load on iOS & Measured \\
-\hline
-Tag from readings & Average of the last 5, every 20 s & Each reading alone, other windows & Stops one odd reading from changing the tag, at a cost of about one minute & Measured delay of about 52 s in a simulation (Section~\ref{sec:ai-compare}) \\
-\hline
-Use in matching & Fail-open filter & Always exclude on a mismatch, rank drivers & Cannot block a ride when the tag is unknown or the passenger has no preference & Design reason \\
+Matching and privacy & The matchRide function, the Flutter code, and the application. & The Cloud Functions verification script, the Flutter tests, and system cases S-C5 and S-F3. & Pass or fail of each check. \\
 \hline
 \end{longtable}
 }
 
+\textbf{Simulation of the confirm rule.} The confirm rule and the update interval were chosen with a simulation, in the manner of the trade-off method of Janko and Lu{\v{s}}trek~\cite{janko2021energy}, with accuracy and lag in place of energy because no energy was measured. The simulation works as follows.
+\begin{itemize}
+    \item \textbf{Timelines.} Each timeline lasts 1,200 seconds and is built from scenes of five kinds of sound: Lively speech, Calm speech, Lively music, Calm music, and Quiet. A scene lasts at least 10 seconds, with a length that follows a gamma distribution and averages 25, 60, or 120 seconds. 300 timelines were averaged for each setting.
+    \item \textbf{Labels.} The raw labels are drawn from a saved pool of real window labels of the pipeline and passed through the confirm rule for $N$ from 1 to 6, with an update every 5.295 or 10 seconds. The truth of a scene is the reading of the pipeline on the clean clip and not a human rating.
+    \item \textbf{Errors.} Errors are drawn in two ways that bracket the real car. Independent: each window is drawn on its own, the best case for the filter. By clip: one clip is used for a scene, so a clip that the pipeline gets wrong stays wrong for the whole scene, the worst case, which no value of $N$ can fix.
+    \item \textbf{Metrics.} False flips for each minute (the stored label changes to a label that is not the true one), reversals for each hour (the label changes and returns to what it was within 60 seconds), lag in seconds from a real change until the stored label is right, and accuracy as the share of seconds in which the stored label is right.
+    \item \textbf{Rule.} The smallest $N$ with at most 0.10 false flips for each minute, for independent errors, 60-second scenes, and updates every 5.295 seconds, fixed before the run.
+    \item \textbf{Interval grid.} A separate grid compared update intervals of 5.295, 10, 15, 20, 30, 45, and 60 seconds with smoothing spans of 0, 15, 30, and 60 seconds and three two-threshold bands, over the same scene lengths. A bootstrap test with a 95\% interval was used to find the largest interval that is not clearly worse than the best.
+\end{itemize}
+The target of 0.10 (one false flip in ten minutes), the reversal window of 60 seconds, the scene lengths, and the 300 timelines are the proponents' own settings and not values from a study.
 
-\vspace{1em}
+\textbf{Researcher rating check.} The final check compares the labels of the AI with the labels of people on recordings made inside a car. It is a sanity check and not ground truth: the researchers built the system, three raters are few, and no student ratings are part of the plan.
+\begin{itemize}
+    \item \textbf{Clips.} Thirty clips of 10 seconds were recorded: 16 of music, 11 of speech, and 3 of quiet. The music and the speech were drawn at random, with a fixed seed of 2026, from lists of popular songs and of podcasts, and each excerpt was taken from 1:00 of the song or 5:00 of the episode, so that it does not start on an intro. The quiet clips were recorded with the engine idling, the air conditioning on, and the road noise.
+    \item \textbf{Recording.} The clips were played through the car stereo of the researcher over Bluetooth, and an iPhone 16 recorded them inside the car, in a cup holder behind the gear selector.
+    \item \textbf{Raters.} Two research-team members who did not know the label of the AI rated each recording as Lively, Calm, or Quiet at home, with headphones and without talking to each other. The researcher who recorded the clips also rated them, but this rater was not blind, so that rater's results are supplementary. The primary result uses the two blind raters.
+    \item \textbf{Analysis.} The label that both blind raters gave is the agreed label, and the label of the AI for a clip is the label of its first window of 5.295 seconds. Agreement between the raters is reported with Cohen's kappa, and the agreement of the three raters with Fleiss' kappa.
+\end{itemize}
+
+\subsection{Design Decisions and Refinements}
+\label{sec:ai-choices}
+Table~\ref{tab:ai-choices} lists each design decision, the alternatives that were weighed, and the reason. After reviewing the literature in Chapter~2, the proponents refined the design of the AI in several places, and each cell that begins with ``Proposal'' states what the proposal said. The proposal fixes no dataset or training detail, so these refinements concern the method and not any stated requirement. The last column says whether a choice comes from a study, sits within a range that studies give, or is a choice of the proponents with a reason. Evidence marked as a design reason was not tested.
+
+{
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{.14\textwidth}|>{\raggedright\arraybackslash}p{.26\textwidth}|>{\raggedright\arraybackslash}p{.17\textwidth}|>{\raggedright\arraybackslash}p{.33\textwidth}|}
+\caption{Design decisions, alternatives, and refinements of the proposal}\label{tab:ai-choices}\\
+\hline
+\textbf{Aspect} & \textbf{Built system} & \textbf{Alternatives} & \textbf{Reason and basis} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Aspect} & \textbf{Built system} & \textbf{Alternatives} & \textbf{Reason and basis} \\
+\hline
+\endhead
+\endfoot
+Names of the moods & Lively, Calm, Quiet (stored as loud, chill, quiet). Proposal: Loud, Chill, Quiet. & --- & The proponents judged that the new names better represent the mood. Decision of the proponents. \\
+\hline
+Definition of a mood & Perceived arousal of the sound. Proposal: loudness (70~dB and above, 50 to 70~dB) and tempo (120 and 100 beats per minute). & Loudness and tempo cutoffs, emotion categories & Arousal is the axis that studies of affect, environments, and music use, and no study gives dB or tempo cutoffs for a vehicle. Literature~\cite{russell1980circumplex,russell1980environments,panda2023audio}. \\
+\hline
+Matching attribute & In-car audio & Driver-chosen tag, driving style, ratings, music-app data, questionnaire & Automatic, private on the device, and describes the ride atmosphere directly. Design reason. \\
+\hline
+Where it runs & On the phone & Cloud server & No recording leaves the phone and no connection is needed. Literature~\cite{zhao2022survey}. \\
+\hline
+Number of moods & Three & Two, four or five, genres, emotions, continuous score & Larger matching pools, fewer disagreements, and a match with passenger choices. Table~\ref{tab:ai-chance}, \cite{hu2008mirex,hu2007simplified,gomez2019emotions,roth2008market}. \\
+\hline
+Features & Pretrained embeddings (YAMNet and an x-vector model). Proposal: amplitude, tempo, and timbre with Librosa MFCC. & --- & Pretrained models are small enough for a phone and have been tested on data that they were not trained on. Literature. \\
+\hline
+Structure & Sound type, then one head for each kind of sound. Proposal: one classifier. & One model for all sound & Arousal models fail across kinds of sound. Literature~\cite{zhang2026generalisation}. \\
+\hline
+Speech & Rated on the same axis as music. Proposal: no rule for speech. & --- & A car with talk only receives a label. Design reason. \\
+\hline
+Sound-type model and cutoffs & YAMNet; speech 0.15, music 0.20 & Other cutoffs, other models & Small enough for a phone, and the cutoffs lie on a plateau (0.10 to 0.30 scored within 0.01). Tested on MUSAN. \\
+\hline
+Speech embedding & x-vector with a linear head & ECAPA, YAMNet, small networks & Speaker-recognition embeddings beat YAMNet for emotion categories, and it scored best on CCC and balanced accuracy of the six variants. Literature~\cite{phukan2023embeddings}; tested. \\
+\hline
+Music embedding & YAMNet mean and maximum with a linear head & Whole-excerpt training & Pooling by mean and maximum works well, and the two training choices cannot be told apart at song level. Literature~\cite{koh2021embeddings}; tested. \\
+\hline
+Cutoffs of the heads & Speech 0; music 5.0 & Other values & Neutral is the origin of the axis, and 5.0 is the midpoint of the scale. Proponents' choice; working values. \\
+\hline
+Mixed audio & Speech first & Music first, rate both & Listeners rank speech highly, and the speech reading changes less when music is added. Indirect support~\cite{liu2025salience,laugs2020mixed}; tested. \\
+\hline
+Listening cycle & 5.295~s windows, back to back. Proposal: 10~s snippets with an update every 30~s. & 10~s, longer intervals & Equals 10 YAMNet frames and sits near a range that studies report, and accuracy fell with each longer interval in the simulation. Range from a study~\cite{sun2023segmented}; tested. \\
+\hline
+Stored label & Two identical labels in a row & Each window alone, larger $N$ & Cuts false flips about tenfold at a cost of about 5.8~s of lag. Simple form of~\cite{cances2019postprocessing}; simulation. \\
+\hline
+Timing of the mood & Locked when the driver accepts. Proposal: the mood may change during a trip. & Changes during the trip & Every passenger in the car shares one preference. Decision of the group. \\
+\hline
+Passenger's preference & Any set of moods; an empty set means Any. Proposal: one preferred mood, matched when the driver's tag equals it. & --- & Matching design of the group. \\
+\hline
+Use in matching & Fail-open filter & Always exclude on a mismatch, rank drivers & Cannot block a ride when the label is unknown or the passenger has no preference. Design reason. \\
+\hline
+Motorcycles & Never run the microphone. Proposal: treated like cars. & Treat like cars & No cabin to sample. Design reason. \\
+\hline
+\end{longtable}
+}
+
 \section{Routing System}
 \label{sec:routing}
 
@@ -924,6 +942,7 @@ Where:
 
 For each additional passenger, their ride token contribution is determined by:
 \begin{equation}
+    \label{eq:extra}
     \frac{\text{Passenger Distance from Destination}}{\text{Total Shared Distance - Passenger Distance from Destination}}
 \end{equation}
 Where: 
@@ -935,7 +954,7 @@ Where:
 
 Only drivers receive Ride Tokens; passengers do not earn tokens. When passengers share the same pick-up point and the same destination, their contributions are split equally, which also avoids a zero denominator in the distance ratio above. Values are rounded up to the nearest hundredth, as stated earlier.
 
-An early drop-off, in which a passenger leaves the vehicle before the final drop-off, earns a flat 1 Ride Token for each such passenger, whatever its length or location. The exception is the first passenger of an outbound trip: if that passenger leaves early, for example because the driver stopped just outside the confirmation radius of the drop-off point and the ride had to be ended as an early drop-off, the passenger is priced like a regular rider and the award is calculated from the distance actually driven to where the passenger got off. The distance is measured to the actual exit point and not to the requested drop-off point, so a driver cannot claim a full trip by ending a ride shortly after pickup. The first passenger is the one picked up earliest. On inbound trips every early drop-off earns the flat rate. An early passenger paid at the flat rate does not take part in the distance calculation above and does not change anyone else's share. This was chosen because an early passenger's exit point can be any GPS position: when it fell a few metres from another passenger's pick-up, the ratio in Equation~3.6 divided by a near-zero gap and produced values of 67 to 101 Ride Tokens for rides that burned only a few tokens' worth of fuel. A trip made only of early drop-offs needs no fuel price or vehicle efficiency. The flat rate is not tied to fuel, so very short early rides are paid more than the fuel formula would give, and long ones less; this trade-off is accepted.
+An early drop-off, in which a passenger leaves the vehicle before the final drop-off, earns a flat 1 Ride Token for each such passenger, whatever its length or location. The exception is the first passenger of an outbound trip: if that passenger leaves early, for example because the driver stopped just outside the confirmation radius of the drop-off point and the ride had to be ended as an early drop-off, the passenger is priced like a regular rider and the award is calculated from the distance actually driven to where the passenger got off. The distance is measured to the actual exit point and not to the requested drop-off point, so a driver cannot claim a full trip by ending a ride shortly after pickup. The first passenger is the one picked up earliest. On inbound trips every early drop-off earns the flat rate. An early passenger paid at the flat rate does not take part in the distance calculation above and does not change anyone else's share. This was chosen because an early passenger's exit point can be any GPS position: when it fell a few metres from another passenger's pick-up, the ratio in Equation~(\ref{eq:extra}) divided by a near-zero gap and produced values of 67 to 101 Ride Tokens for rides that burned only a few tokens' worth of fuel. A trip made only of early drop-offs needs no fuel price or vehicle efficiency. The flat rate is not tied to fuel, so very short early rides are paid more than the fuel formula would give, and long ones less; this trade-off is accepted.
 
 The ceilings above are enforced on the server. The driver's running total cannot exceed 300 Ride Tokens in the current semester or 1,800 across the programme. A ride that would pass a ceiling still completes, but the award is cut to the amount that fits and the excess is forfeited, not carried over; the ledger keeps both the uncapped value and the reason for the cut so that the administrator can see what the trip was really worth. The semester is defined by the dates that the administrator sets on the Semester Period screen. Until those dates are set, only the 1,800 ceiling applies.
 
@@ -1022,7 +1041,7 @@ To better understand the scheme, the following example scenarios are provided. T
 \vspace{1em}
 
 \noindent\textit{Scenario C: Multi-Passenger Pickup Distribution}
-To prevent over-rewarding for multiple pickups, tokens are distributed proportionally based on distance, following Equation~3.6 exactly as proposed:
+To prevent over-rewarding for multiple pickups, tokens are distributed proportionally based on distance, following Equation~(\ref{eq:extra}) exactly as proposed:
 
 \begin{itemize}
     \item \textbf{A} (11 km): full trip value — 9.54 Tokens
@@ -1062,7 +1081,7 @@ To prevent over-rewarding for multiple pickups, tokens are distributed proportio
 \end{table}
 
 \vspace{1em}
-The first passenger always contributes the full token value for the total distance. The ratio in Equation~3.6 does not depend on the vehicle and grows without bound as a passenger's pickup point approaches the first passenger's. This is acceptable for regular rides because pickup and drop-off points are set in advance by the administrator and are never arbitrarily close; arbitrary exit points are handled by the flat early drop-off rate above.
+The first passenger always contributes the full token value for the total distance. The ratio in Equation~(\ref{eq:extra}) does not depend on the vehicle and grows without bound as a passenger's pickup point approaches the first passenger's. This is acceptable for regular rides because pickup and drop-off points are set in advance by the administrator and are never arbitrarily close; arbitrary exit points are handled by the flat early drop-off rate above.
 
 \vspace{1em}
 \noindent\textit{Scenario D: The Same 11 km Trip with Different Vehicles}
@@ -1199,7 +1218,7 @@ The scheme was designed for real commutes, where distances are in kilometers and
     \item \textbf{D} (0.1 km): $\frac{0.1}{0.5-0.1} = 0.25$ Ride Tokens.
     \item \textbf{Total Ride Tokens earned:} 2.85, which is more than six times the 0.44 of a trip with one passenger.
 \end{itemize}
-The ratio in Equation~3.6 depends only on how the pickup points lie along the trip and not on how long the trip is, whereas the value of the first passenger follows the fuel burned and so shrinks with the distance. On a commute of 11~km the two are of similar size (Scenario C). On a campus trip of 0.5~km, the first passenger earns 0.44 Ride Tokens and the other three earn 1.5, 0.67, and 0.25, so the total looks large for the short distance driven. The scheme was designed for real-life commutes. Scenarios J to M belong to the controlled setting and are shown only to demonstrate and explain this behavior; they are not a typical outcome of the scheme.
+The ratio in Equation~(\ref{eq:extra}) depends only on how the pickup points lie along the trip and not on how long the trip is, whereas the value of the first passenger follows the fuel burned and so shrinks with the distance. On a commute of 11~km the two are of similar size (Scenario C). On a campus trip of 0.5~km, the first passenger earns 0.44 Ride Tokens and the other three earn 1.5, 0.67, and 0.25, so the total looks large for the short distance driven. The scheme was designed for real-life commutes. Scenarios J to M belong to the controlled setting and are shown only to demonstrate and explain this behavior; they are not a typical outcome of the scheme.
 
 \vspace{1em}
 Table~\ref{tab:scenario-summary} lists the example scenarios and what each one shows.
@@ -1466,7 +1485,7 @@ Testing is carried out in four phases. The first two phases are referred to as a
     \end{tabular}
 \end{table}
 
-\paragraph{Reference standard.} The four phases follow the test levels described in ISO/IEC/IEEE 29119 (Section~\ref{sec:standards}): unit testing of individual rules, system testing of the integrated application, and acceptance testing by the intended users, with beta testing by outside volunteers added before the acceptance phase. Following the documentation practice of the standard, each system test case records a step, an expected result, and an actual result per device, and the beta tasks are kept as a fixed written task list (Appendix~\ref{app:beta}). The expected results come from the specified rules, such as the acceptance and route-match distances of Table~\ref{tab:rules-by-setting}, and the token scenarios of Section~\ref{sec:tokens}, which corresponds to the requirement-based test design described in Part 4 of the standard. Part 11 of the standard, on AI-based systems, is a pointer for the mood classifier, which is evaluated on a held-out test set and on real-world songs (Chapter~4). The standard serves only as a reference framework; the testing was not assessed for conformance with it.
+\paragraph{Reference standard.} The four phases follow the test levels described in ISO/IEC/IEEE 29119 (Section~\ref{sec:standards}): unit testing of individual rules, system testing of the integrated application, and acceptance testing by the intended users, with beta testing by outside volunteers added before the acceptance phase. Following the documentation practice of the standard, each system test case records a step, an expected result, and an actual result per device, and the beta tasks are kept as a fixed written task list (Appendix~\ref{app:beta}). The expected results come from the specified rules, such as the acceptance and route-match distances of Table~\ref{tab:rules-by-setting}, and the token scenarios of Section~\ref{sec:tokens}, which corresponds to the requirement-based test design described in Part 4 of the standard. Part 11 of the standard, on AI-based systems, is a pointer for the mood classifier, which is evaluated on held-out data, on mixed audio, on the phones, and in a rating check on car recordings (Chapter~4). The standard serves only as a reference framework; the testing was not assessed for conformance with it.
 
 \paragraph{Testing approach.} The tester tasks and the survey are black box testing: the testers do not know the code and judge the application only by the inputs they give and the outputs they see \cite{gfgbox}. Beta testing means that a limited group of real users tries the application and gives feedback, and acceptance testing means that end users check that the application meets their requirements in realistic scenarios \cite{gfgacceptance}. The results are kept in two groups. Functional testing checks that the application works according to its specified requirements \cite{gfgfunctional}; it is the task list, where each task is recorded as Pass, Fail, or Could not try. Non-functional testing checks how well the application works rather than what it does \cite{gfgnonfunctional}; here it is the survey questions on speed, notifications, readability, reliability, and privacy and, in the user acceptance testing, the System Usability Scale. These are the testers' perceptions, not measurements, and no phase times responses under load, so this study does not claim performance or load testing. The user acceptance phase is judged mainly on these usability and perception questions. The automated and rules tests run by the proponents are white box testing, because the tester knows the code, and checks made with partial knowledge of the internals, such as comparing a token award with the formula, are grey box testing \cite{gfgbox}.
 
@@ -1490,7 +1509,7 @@ For alpha and beta testing, the proponents signed in with their own Apple IDs an
 Unit testing is automated and is white box testing. It runs the Flutter static analysis (\texttt{flutter analyze}), the Flutter test suite (\texttt{flutter test}), the Cloud Functions test suite (\texttt{npm run test:functions}), the Firestore and Storage rules tests (\texttt{npm run test:rules}, run in the Firebase emulator), and a set of nine verification scripts. The Flutter tests are grouped into six areas: accounts and registration, ride flow and matching, tokens, fuel, and the CES period, admin, reports, and ratings, mood detection, and shared interface and safety. The scripts check that the server campus geofence agrees with the client, the \texttt{matchRide} rules (acceptance distance, geofence-side direction, capacity, and vehicle filters), the Ride Token arithmetic against the scenarios in this manuscript, the routes and Places parsers, the ranking of alternative drop-off points, the Firestore and Storage security rules, and the DOE fuel price parser, which can also be run live against the current DOE report. A few parts have no automated test of their own, namely the eleven push notification triggers, the privacy retention functions, the callable functions that create ride requests and calculate Ride Tokens, the emergency report function, and some client services for the trip lifecycle and notification navigation. These are covered by the system test cases instead.
 
 \subsubsection{Phase 2: System Testing}
-System testing runs 32 cases that exercise the application as a whole through its screens, with some checks made against the backend. The cases are grouped into six areas, accounts and admin (S-A1 to S-A6), ride flow (S-B1 to S-B8), matching filters (S-C1 to S-C6), tokens and fuel (S-D1 to S-D4), notifications and chat (S-E1 to S-E4), and safety and privacy (S-F1 to S-F4), and they are listed in Appendix~\ref{app:systemcases}. Each case lists a step, an expected result, and the actual result per device, together with who ran it, the date, and any defect found. The cases are executed on two emulators, with an admin account and the live backend, and then repeated on three physical devices (Table~\ref{tab:devices}). On the physical devices each case is run in five rounds, and it passes only when all five rounds succeed and fails if at least one round fails. In addition, a set of measurements is recorded per device, taking what was observed rather than an estimate: the time from a ride request to the driver prompt, the time from the driver's acceptance to the passenger's screen update (median of 5 runs each), the cold start time (median of 3 runs), the number of crashes and freezes counted from Firebase Crashlytics and the testers' notes, the number of correct mood detections out of nine test clips (three Lively, three Chill, three Quiet), and the size of the debug build.
+System testing runs 32 cases that exercise the application as a whole through its screens, with some checks made against the backend. The cases are grouped into six areas, accounts and admin (S-A1 to S-A6), ride flow (S-B1 to S-B8), matching filters (S-C1 to S-C6), tokens and fuel (S-D1 to S-D4), notifications and chat (S-E1 to S-E4), and safety and privacy (S-F1 to S-F4), and they are listed in Appendix~\ref{app:systemcases}. Each case lists a step, an expected result, and the actual result per device, together with who ran it, the date, and any defect found. The cases are executed on two emulators, with an admin account and the live backend, and then repeated on three physical devices (Table~\ref{tab:devices}). On the physical devices each case is run in five rounds, and it passes only when all five rounds succeed and fails if at least one round fails. In addition, a set of measurements is recorded per device, taking what was observed rather than an estimate: the time from a ride request to the driver prompt, the time from the driver's acceptance to the passenger's screen update (median of 5 runs each), the cold start time (median of 3 runs), the number of crashes and freezes counted from Firebase Crashlytics and the testers' notes, and the size of the debug build. The checks of the mood AI on the phones are reported separately in Section~\ref{sec:ai-phones}.
 
 \paragraph{Limit on iOS notifications.} The iOS devices could not receive push notifications during alpha testing, because the proponents used free Apple IDs and did not have paid Apple Developer accounts (Section~\ref{sec:scope}). The notification cases (S-E1 to S-E4) could therefore be run only on the emulators and on the Android phone, and not on the two iPhones. Chat itself works on iOS inside the application, but a message is not announced when the application is closed or in the background.
 
@@ -1716,10 +1735,10 @@ Testing Method: Simulated rides with pre-defined fare calculations to check accu
         \item Driver A starts at SAFAD, which is outside the Bunzel geofence, and initiates a rideshare trip using an Apple device.
         \item During the trip, Driver A intentionally deviates from the assigned route, using the campus roads only.
         \item The app triggers automatic rerouting through Google Maps.
-        \item The AI model activates and classifies the vehicle's audio environment as ``Lively''.
+        \item The AI model activates and rates the sound in the vehicle as ``Lively''.
         \item The system matches Driver A with Passenger A, whose mood preference is also Lively.
         \item Driver A picks up Passenger A at SAS.
-        \item Passenger B, who prefers Chill, is not matched with the Lively driver, so the request stays unmatched. After waiting about two minutes, Passenger B is prompted to change the mood preference and chooses Lively (Section~\ref{sec:moodmatch}). Driver A can then see the request and picks up Passenger B at SAS.
+        \item Passenger B, who prefers Calm, is not matched with the Lively driver, so the request stays unmatched. After waiting about two minutes, Passenger B is prompted to change the mood preference and chooses Lively (Section~\ref{sec:moodmatch}). Driver A can then see the request and picks up Passenger B at SAS.
         \item The driver completes the trip, arriving at the Bunzel building with both passengers.
     \end{enumerate}
 
@@ -1727,13 +1746,13 @@ Testing Method: Simulated rides with pre-defined fare calculations to check accu
 \vspace{1em}
     \begin{enumerate}
         \item Driver B starts at the Bunzel building, inside the geofence, and initiates an outbound rideshare trip using an Android device.
-        \item The AI model activates and detects a ``Chill'' mood classification.
-        \item Driver B is matched with Passenger C, who prefers Chill and is waiting in the Bunzel building, and picks Passenger C up there.
+        \item The AI model activates and detects a ``Calm'' mood.
+        \item Driver B is matched with Passenger C, who prefers Calm and is waiting in the Bunzel building, and picks Passenger C up there.
         \item The system detects no match with Passenger D, who has no stated preference and whose destination is not aligned with the route of Driver B.
         \item Passenger D is also picked up in the Bunzel building, to test the ride inclusion logic.
         \item Driver B completes the ride by dropping off Passenger C at SAFAD and then Passenger D at SAS.
     \end{enumerate}
 
-\indent This structured testing process ensured all key system components—registration flows, admin controls, routing and rerouting mechanisms, AI-based mood classification, and match compatibility—were executed in observable and verifiable conditions. The test also provided a qualitative basis for evaluating the app’s tolerance for imperfect match cases and real-world variability.
+\indent This structured testing process ensured all key system components—registration flows, admin controls, routing and rerouting mechanisms, AI-based mood detection, and match compatibility—were executed in observable and verifiable conditions. The test also provided a qualitative basis for evaluating the app’s tolerance for imperfect match cases and real-world variability.
 
 

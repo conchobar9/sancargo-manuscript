@@ -41,6 +41,8 @@ Due to current resource and development constraints, this version of the project
 
 The iOS version of the application could not receive push notifications during testing. Push notifications on iOS need a paid Apple Developer Program account, and the proponents used free Apple IDs. Notifications were therefore tested on Android devices and emulators only, and iOS users have to open the application to see new requests, ride updates, and chat messages.
 
+The mood AI rates the energy (arousal) of the sound inside the driver's vehicle as Lively, Calm, or Quiet. It describes the sound and does not judge the mood or the emotional state of any person, and it is not an emotion detector. Its limits are stated in plain words in Section~\ref{sec:ai-limits}. In short: the labels were not validated against human ratings in a car, and a rating check on 30 car recordings did not support the Lively and Calm labels (Section~\ref{sec:ai-rating}); the speech head was trained on acted speech; the Quiet label was tested on synthetic noise and not on the noise of a car; the cutoffs are working values; the microphone also hears conversation in the car, which is rated as speech; battery use was not measured and no energy claim is made; and the mood lock was checked on one iPhone only, while the timings come from one Android phone and one iPhone.
+
 The application was not released on Google Play or the App Store. Android builds for the UAT were delivered through Firebase App Distribution to invited testers, and the other Android builds were installed from Android Studio as debug builds. iOS builds were installed from Xcode with free Apple IDs, because TestFlight and the App Store need a paid Apple Developer Program membership of about USD 99 per year, which the proponents judged not justified for a short testing period. The free route has the limits described in Section~\ref{sec:install}, such as the seven-day expiry. In addition, Apple does not publish how many devices one Apple ID can register, and participants had to turn on Developer Mode, which lowers some device protections, so they were informed of this and consented before installing.
 
 The ridesharing mobile application was developed for iOS and Android devices, with deployment and testing restricted to a specific sample of USC-TC students from the Computer Engineering Department. The sample size of the UAT is up to 60 students, set by the capacity of the proponents to supervise the testing and by the number of drivers and passengers needed for rides to match (Section~\ref{sec:phases}). Participants, both student-drivers and student-passengers, must be enrolled at USC during the 1st Semester of AY 2026--2027.
@@ -58,3 +60,30 @@ The thesis project aimed to provide more knowledge towards the practicality of a
 
 
 
+
+\section{Definition of Terms}\label{sec:terms}
+The following terms are used in this paper with the meanings given here.
+\begin{description}
+    \item[Student Driver] A verified USC student who offers a ride in their own vehicle through SanCarGo.
+    \item[Student Passenger] A verified USC student who requests a ride through SanCarGo.
+    \item[Administrator] A user who reviews registrations, reports, and Ride Token claims, and manages the ride points and the settings of the system.
+    \item[Inbound trip] A trip toward the Bunzel Point. The trip is inbound when the user's position is outside the Bunzel geofence.
+    \item[Outbound trip] A trip that begins at the Bunzel Point. The trip is outbound when the user's position is inside the Bunzel geofence.
+    \item[Bunzel Point] The fixed campus terminal of SanCarGo, at the Bunzel Building. Inbound trips end there and outbound trips begin there.
+    \item[Ride point] A pickup point or a drop-off point set by the administrator. Passengers and drivers choose from these points and do not enter a free location.
+    \item[Geofence] A virtual boundary drawn as a polygon on the map. The system uses it to tell whether a user is inside or outside an area, for example to classify the direction of a trip.
+    \item[Matching] The process of pairing a ride request with a driver who is near the pickup point, has a free seat, and does not conflict with the mood and vehicle preferences of the passenger.
+    \item[First-in, first-out (FIFO) queue] The order in which the requests at a pickup point are served, so that the passenger who requested first is served first.
+    \item[Early drop-off] A drop-off of a passenger before their requested drop-off point, because the passenger asked to get off earlier.
+    \item[Ride Token] A non-monetary reward that a Student Driver earns for a completed ride. Its value follows the fuel spent on the trip and is not money.
+    \item[Ride Token Regulator] The division by five that is applied to the value of the fuel cost of a trip, so that the semester limit of Ride Tokens cannot be reached within a few weeks.
+    \item[Community Extension Service (CES) point] A credit of the USC Community Extension Service Office. One hundred Ride Tokens are equal to one CES point.
+    \item[Mood AI] The part of SanCarGo that listens to the sound inside the vehicle on the driver's phone and rates its energy as Lively, Calm, or Quiet. It does not judge the mood or emotional state of any person.
+    \item[Arousal] The energy of a sound, from low to high. The labels of the mood AI follow this single axis and ignore how pleasant the sound is.
+    \item[Lively, Calm, and Quiet] The three labels of the mood AI. Lively is sound of high energy, Calm is sound of low energy, and Quiet is little sound or no clear music or speech.
+    \item[Mood preference] The labels that a Student Passenger accepts. A passenger who accepts any label is matched with every driver, and a driver whose label is unknown is matched with every passenger.
+    \item[On-device inference] Running the mood AI on the phone of the driver. The audio is analyzed on the phone and is not recorded or uploaded, and only the resulting label is stored.
+    \item[Design setting] The use of SanCarGo as it was designed, for real commuting, with the full campus geofence and the longer distances.
+    \item[Controlled setting] The use of SanCarGo for testing and demonstration only, with a smaller geofence and shorter distances (Table~\ref{tab:rules-by-setting}).
+    \item[Emergency button] The button with which a user can alert the administrators during a ride. It does not contact emergency services, and the user is told to call them directly in immediate danger.
+\end{description}
