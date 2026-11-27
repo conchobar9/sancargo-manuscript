@@ -941,7 +941,7 @@ The ceilings above are enforced on the server. The driver's running total cannot
 
 \vspace{1em}
 
-To better understand the scheme, the following example scenarios are provided. They use a fuel price of PHP 52 per liter, the example price used in the original proposal, and a driver who declared the mid-size SUV category (12~km/L, Table~\ref{tab:efficiency}). The vehicle category matters: the same 11~km trip earns about 2.08 Ride Tokens for a scooter and 9.54 for this SUV, so reaching the semester cap takes between about 32 and 145 shared rides depending on the vehicle. Scenarios A to C show a single passenger and several pickups. Scenarios D to I cover the other cases of the scheme: the vehicle category, passengers who share a pickup point, early drop-offs, the first passenger of an outbound trip who leaves early, and the semester ceiling. Unless stated otherwise, they keep the same fuel price and the same SUV. The trips of about 11~km in Scenarios A to I illustrate the scheme over a longer commute, such as the routes the system can support beyond USC-TC; they were not made in the study. Scenarios J to M use campus-length trips, like the rides of the controlled testing, with the distances between campus buildings: about 0.5~km from the RH Building to the Bunzel building, about 0.4~km from the Bunzel building to SAFAD, and about 0.1~km from the MR Hall to the chapel. Scenario M uses assumed pickup points along the 0.5~km trip.
+To better understand the scheme, the following example scenarios are provided. They use a fuel price of PHP 52 per liter, the example price used in the original proposal, and a driver who declared the mid-size SUV category (12~km/L, Table~\ref{tab:efficiency}). The vehicle category matters: the same 11~km trip earns about 2.08 Ride Tokens for a scooter and 9.54 for this SUV, so reaching the semester cap takes between about 32 and 145 shared rides depending on the vehicle. Scenarios A to C show a single passenger and several pickups. Scenarios D to I cover the other cases of the scheme: the vehicle category, passengers who share a pickup point, early drop-offs, the first passenger of an outbound trip who leaves early, and the semester ceiling. Unless stated otherwise, they keep the same fuel price and the same SUV. The trips of about 11~km in Scenarios A to I illustrate the scheme over a longer commute, such as the routes the system can support beyond USC-TC; they were not made in the study. Scenarios J to M are \textbf{for the controlled setting and for demonstration only}. They use campus-length trips, like the rides of the controlled testing, with the distances between campus buildings: about 0.5~km from the RH Building to the Bunzel building, about 0.4~km from the Bunzel building to SAFAD, and about 0.1~km from the MR Hall to the chapel. Scenario M uses assumed pickup points along the 0.5~km trip. These four scenarios show how the scheme behaves in the controlled testing; they are not examples of the Ride Tokens earned in real-life commuting, which is the setting the scheme was designed for and is illustrated by Scenarios A to I.
 
 \vspace{1em}
 \noindent\textit{Scenario A: Long-Distance Carpooler (11 km one way)}
@@ -1153,7 +1153,7 @@ The driver of the mid-size SUV starts an outbound trip from the Bunzel building 
 \end{itemize}
 
 \vspace{1em}
-\noindent\textit{Scenario J: A Campus-Length Trip (0.5 km)}
+\noindent\textit{Scenario J: A Campus-Length Trip (0.5 km)}\\\textit{[Controlled setting, demonstration only]}
 \begin{itemize}
     \item A Student Driver takes Student Passenger A on an inbound trip of 0.5 km from the RH Building to the Bunzel building.
     \item Fuel consumption: 0.5/12 $\approx$ 0.042 L.
@@ -1170,7 +1170,7 @@ The driver of the mid-size SUV starts an outbound trip from the Bunzel building 
 \end{itemize}
 
 \vspace{1em}
-\noindent\textit{Scenario K: Two Passengers on a Campus-Length Trip}
+\noindent\textit{Scenario K: Two Passengers on a Campus-Length Trip}\\\textit{[Controlled setting, demonstration only]}
 \begin{itemize}
     \item Passenger A and Passenger B board at the same campus building and travel to the same destination, 0.5 km away.
     \item The full value of the trip is 0.44 Ride Tokens (Scenario J), shared equally:
@@ -1181,7 +1181,7 @@ The driver of the mid-size SUV starts an outbound trip from the Bunzel building 
 \end{itemize}
 
 \vspace{1em}
-\noindent\textit{Scenario L: An Early Drop-off on a Campus-Length Trip}
+\noindent\textit{Scenario L: An Early Drop-off on a Campus-Length Trip}\\\textit{[Controlled setting, demonstration only]}
 \begin{itemize}
     \item On the inbound trip of Scenario J, the passenger asks to get off before the destination, and the driver confirms.
     \item The early drop-off earns the flat rate of 1 Ride Token, whatever the length of the ride.
@@ -1189,7 +1189,7 @@ The driver of the mid-size SUV starts an outbound trip from the Bunzel building 
 \end{itemize}
 
 \vspace{1em}
-\noindent\textit{Scenario M: Several Passengers on a Campus-Length Trip}
+\noindent\textit{Scenario M: Several Passengers on a Campus-Length Trip}\\\textit{[Controlled setting, demonstration only]}
 The scheme was designed for real commutes, where distances are in kilometers and the pickup points are far apart. This scenario shows why the calculation can look off on a campus-length trip.
 \begin{itemize}
     \item The inbound trip of Scenario J has four passengers, with assumed pickup points 0.5, 0.3, 0.2, and 0.1~km from the destination.
@@ -1199,7 +1199,7 @@ The scheme was designed for real commutes, where distances are in kilometers and
     \item \textbf{D} (0.1 km): $\frac{0.1}{0.5-0.1} = 0.25$ Ride Tokens.
     \item \textbf{Total Ride Tokens earned:} 2.85, which is more than six times the 0.44 of a trip with one passenger.
 \end{itemize}
-The ratio in Equation~3.6 depends only on how the pickup points lie along the trip and not on how long the trip is, whereas the value of the first passenger follows the fuel burned and so shrinks with the distance. On a commute of 11~km the two are of similar size (Scenario C). On a campus trip of 0.5~km, the first passenger earns 0.44 Ride Tokens and the other three earn 1.5, 0.67, and 0.25, so the total looks large for the short distance driven. The scheme was designed for real-life commutes, and the campus-length scenarios are shown to explain this behavior, not as a typical outcome of the scheme.
+The ratio in Equation~3.6 depends only on how the pickup points lie along the trip and not on how long the trip is, whereas the value of the first passenger follows the fuel burned and so shrinks with the distance. On a commute of 11~km the two are of similar size (Scenario C). On a campus trip of 0.5~km, the first passenger earns 0.44 Ride Tokens and the other three earn 1.5, 0.67, and 0.25, so the total looks large for the short distance driven. The scheme was designed for real-life commutes. Scenarios J to M belong to the controlled setting and are shown only to demonstrate and explain this behavior; they are not a typical outcome of the scheme.
 
 \vspace{1em}
 Table~\ref{tab:scenario-summary} lists the example scenarios and what each one shows.
@@ -1223,10 +1223,10 @@ Table~\ref{tab:scenario-summary} lists the example scenarios and what each one s
         G & Inbound trip with early drop-offs only & 3.00 \\
         H & First passenger of an outbound trip leaves early & 6.03 \\
         I & Award cut by the semester ceiling & 5.00 of 9.54 \\
-        J & One passenger, campus-length trip (0.5 km, RH Building to Bunzel) & 0.44 \\
-        K & Two passengers with the same pickup point and destination, campus length & 0.44 in total \\
-        L & Early drop-off on a campus-length trip & 1.00 \\
-        M & Several passengers on a campus-length trip (assumed distances) & 2.85 \\
+        J & Controlled setting only: one passenger, campus-length trip (0.5 km, RH Building to Bunzel) & 0.44 \\
+        K & Controlled setting only: two passengers with the same pickup point and destination, campus length & 0.44 in total \\
+        L & Controlled setting only: early drop-off on a campus-length trip & 1.00 \\
+        M & Controlled setting only: several passengers on a campus-length trip (assumed distances) & 2.85 \\
         \hline
     \end{tabular}
 \end{table}
