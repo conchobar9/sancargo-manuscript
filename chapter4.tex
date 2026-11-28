@@ -1,6 +1,6 @@
 \chapter{Results and Discussion}
 
-This chapter reports the results gathered so far. The alpha testing results (unit and system testing) and the beta testing results are as of mid-November 2026. The user acceptance testing (UAT) has been carried out, but the results of its feedback survey and of the preliminary survey are not yet reported, and their sections are marked for completion.
+This chapter reports the results gathered so far. The alpha testing results (unit and system testing) and the beta testing results are as of mid-November 2026. The user acceptance testing (UAT) has been carried out, and the results of its preliminary survey are reported below. The results of its feedback survey are not yet reported, and its section is marked for completion.
 
 \section{AI Mood Performance}
 \label{sec:ai-results}
@@ -491,7 +491,77 @@ Two limits were found in beta testing: visual interface issues on Android device
 \label{sec:uat-results}
 \subsection{Preliminary Survey}
 \label{sec:prelim-results}
-\TODO{Preliminary survey results (target at least 191 respondents): number of respondents, residential locations and landmarks, phone operating systems and carriers, number of respondents who chose to be testers, and driver-to-passenger ratio.}
+The preliminary survey was answered by 98 of the 378 enrolled Computer Engineering students (25.9\%), which is 51.3\% of the target of 191 respondents (Section~\ref{sec:prelim}). With 98 respondents, the margin of error at a 95\% confidence level is about 8.5\%, assuming $p=0.5$ and the finite population correction, and not the planned 5\%. The results describe the respondents and not all the students of the department. Table~\ref{tab:prelim-results} shows who answered and who chose to be a tester.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Respondents of the preliminary survey and the respondents who chose to be testers}\label{tab:prelim-results}
+    \small
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.34\textwidth}|>{\centering\arraybackslash}p{0.26\textwidth}|>{\centering\arraybackslash}p{0.26\textwidth}|}
+        \hline
+        \textbf{Characteristic} & \textbf{All respondents ($n=98$)} & \textbf{Chose to be testers ($n=46$)} \\
+        \hline
+        \multicolumn{3}{|l|}{\textit{Year level}} \\
+        \hline
+        Year 1 & 27 (27.6\%) & 16 (34.8\%) \\
+        \hline
+        Year 2 & 31 (31.6\%) & 20 (43.5\%) \\
+        \hline
+        Year 3 & 22 (22.4\%) & 10 (21.7\%) \\
+        \hline
+        Year 4 & 18 (18.4\%) & 0 (0.0\%) \\
+        \hline
+        \multicolumn{3}{|l|}{\textit{Place of residence}} \\
+        \hline
+        Cebu City & 30 (30.6\%) & 15 (32.6\%) \\
+        \hline
+        Lapu-Lapu City & 19 (19.4\%) & 10 (21.7\%) \\
+        \hline
+        Mandaue City & 19 (19.4\%) & 10 (21.7\%) \\
+        \hline
+        Liloan & 12 (12.2\%) & 4 (8.7\%) \\
+        \hline
+        Talisay City & 9 (9.2\%) & 4 (8.7\%) \\
+        \hline
+        Consolacion & 9 (9.2\%) & 3 (6.5\%) \\
+        \hline
+        \multicolumn{3}{|l|}{\textit{Operating system of the phone}} \\
+        \hline
+        Android & 47 (48.0\%) & 20 (43.5\%) \\
+        \hline
+        iOS (iPhone) & 37 (37.8\%) & 20 (43.5\%) \\
+        \hline
+        Both & 14 (14.3\%) & 6 (13.0\%) \\
+        \hline
+        \multicolumn{3}{|l|}{\textit{Mobile network carrier}} \\
+        \hline
+        Globe or GOMO & 56 (57.1\%) & 25 (54.3\%) \\
+        \hline
+        Smart, TNT, or Sun & 34 (34.7\%) & 17 (37.0\%) \\
+        \hline
+        DITO & 8 (8.2\%) & 4 (8.7\%) \\
+        \hline
+        \multicolumn{3}{|l|}{\textit{Role chosen (testers only)}} \\
+        \hline
+        Passenger only & -- & 35 (76.1\%) \\
+        \hline
+        Driver and passenger & -- & 11 (23.9\%) \\
+        \hline
+        \multicolumn{3}{|l|}{\textit{Vehicle of the drivers (drivers only, $n=11$)}} \\
+        \hline
+        Car, diesel & -- & 4 \\
+        \hline
+        Car, gasoline & -- & 2 \\
+        \hline
+        Motorcycle, gasoline & -- & 5 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Forty-six of the 98 respondents (46.9\%) chose to be testers, and 52 did not. The testers came from Years 1 to 3: none of the 18 respondents of Year 4 chose to be a tester. Of the testers, 35 chose to be passengers only and 11 chose to be both drivers and passengers, which gives about one driver for every three passengers (11 to 35). Of the 11 drivers, 6 drove cars (4 diesel and 2 gasoline) and 5 rode motorcycles (all gasoline), and 4 of the 5 motorcycle drivers had a spare helmet to lend to a passenger. The phones of the testers were evenly divided between the two platforms: 20 Android phones, 20 iPhones, and 6 respondents who had both, so the application had to work on both.
+
+The respondents lived mostly in Cebu City (30), Lapu-Lapu City (19), and Mandaue City (19), and most used Globe or GOMO (56) or Smart, TNT, or Sun (34) for mobile data. The landmarks that they named near the start of their daily commute were mostly malls and public markets, and the most frequent were SM Consolacion (5 respondents), E-Plaza in Liloan (4), and Pacific Mall (3). One respondent left the landmark blank.
 
 \subsection{Participation and Conduct}
 \label{sec:uat-conduct}
