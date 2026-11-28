@@ -428,13 +428,13 @@ Table~\ref{tab:measure} gives the measurements recorded during system testing. R
         Accept to passenger update (median of 5 runs) & 1.6 s & 1.4 s & 1.2 s & 1.3 s \\
         Cold start to home screen (median of 3 runs) & 2.7 s & 0.9 s & 1.0 s & 0.9 s \\
         Crashes and freezes & 0 & 0 & 0 & 0 \\
-        App size (phone storage) & -- & 285 MB & 90.6 MB & 91.3 MB \\
+        App size (phone storage) & -- & 199 MB & 197 MB & 197 MB \\
         \hline
     \end{tabular}
     \par\smallskip{\footnotesize Emulator: Google Pixel 8 Pro. Android: Samsung Galaxy A06 5G. iOS 1: iPhone 17. iOS 2: iPhone 15 Pro Max. App size was read from each phone's storage settings.}
 \end{table}
 
-The Android app was installed from Android Studio as a debug build. A debug build is not size-optimized, and its package includes native libraries for three CPU architectures (arm64-v8a, armeabi-v7a, and x86\_64) so that one build runs on different Android phones. The debug APK was 109 MB, and the 285 MB shown in the phone's settings also includes the unpacked libraries, compiled code, and app data. The iOS build contains only the architecture of the device it is installed on. For comparison, a release build with one APK per CPU architecture is 32.0 MB (armeabi-v7a), 36.6 MB (arm64-v8a), and 39.9 MB (x86\_64), so the Android figure reported in testing is larger than what a user would install from a release.
+The Android app was installed from Android Studio as a debug build. A debug build is not size-optimized, and its package includes native libraries for three CPU architectures (arm64-v8a, armeabi-v7a, and x86\_64) so that one build runs on different Android phones. The debug APK was 109 MB, and the 199 MB shown in the phone's settings also includes the unpacked libraries, compiled code, and app data. The iOS build contains only the architecture of the device it is installed on. For comparison, a release build with one APK per CPU architecture is 32.0 MB (armeabi-v7a), 36.6 MB (arm64-v8a), and 39.9 MB (x86\_64), so the Android figure reported in testing is larger than what a user would install from a release. \TODO{Update the debug APK size and the release APK sizes for the final build, which includes the larger AI models.}
 
 \subsection{Limits Found}
 The main limit found in alpha testing was the difficulty of performing matched rides with physical devices. Matching needs a driver and a passenger device in the right places at the same time. Three cases that need such rides (S-B5, S-B7, and S-D2) were run for one round only, against five rounds for the other cases. Each round of these cases needed a driver to drive a vehicle with a passenger device in the matching area, and the proponents limited it to one round to save fuel and time.
