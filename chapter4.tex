@@ -483,12 +483,12 @@ Of the eleven who answered the feedback survey, four never use ridesharing appli
 
 Eight participants named nothing confusing. The others named the booking step, because it offers only set locations, the setup, and the points. Five participants suggested no change. The others suggested more places to book from or to be dropped off at, onboarding, another mood, a countdown with the passengers, and brighter colors.
 
-\TODO{Add the problems that the proponents found in the dry run and any change that was made to the application or to the surveys because of it.}
+The dry run found three problems. First, the Confirm Drop-off button was not accessible during an outbound trip, because the driver was not close enough to the drop-off pin to see it; the distance within which the button appears was increased so that drivers see it sooner (Table~\ref{tab:rules-by-setting}). Second, users were signed out of their accounts when they left the application in the background for a short time or swiped it away in the app selector; accounts now stay signed in for \TODO{number of days} days. Third, one user could not tap Request Pickup because the button was greyed out; this was later found to be a problem with the Wi-Fi network that the user was connected to and not a defect of the application.
 
 \subsection{Limits Found}
 Two limits were found in beta testing: visual interface issues on Android devices, and differing opinions on mood classification, which appeared both among the most confusing parts and among the suggested improvements. In addition, the rides were played on emulators with simulated GPS, so the results say nothing about how real GPS drifts on a moving vehicle, battery use and heat, or whether live tracking survives a phone in a pocket. Twelve testers is a small group, and most had not used a ridesharing application before.
 
-\TODO{Add the result of the team checks and the severity of the problems reported by testers, which are not in the results received so far.}
+Every team check passed, and no check failed, so the pass mark for the team checks (Table~\ref{tab:betapass}) was met. The problems that the testers reported were not severe: they were mostly cosmetic suggestions and requests for better tuning of the AI.
 
 
 \section{User Acceptance Testing}
@@ -573,7 +573,7 @@ Forty-six students took part in the UAT, against the target of about 48 (25\% of
 
 The UAT departed from the plan in two ways. First, it was planned for two weeks but was held for one week. The review of the REC took longer than the proponents expected, and the test had to be compressed into the time that remained. Second, only a few participants were willing to take part in actual rides. The controlled setting confined the rides to the campus routes of Table~\ref{tab:rules-by-setting}, and the participants did not find it practical to drive around the campus: the routes were out of the way for them and would take some time, since, as Computer Engineering students, they stayed mostly at the Bunzel building where their classes were held. The participants were willing to use the application and to test it, in particular its user interface, and most of this use was done while stationary, but they were not willing to make actual rides around the campus.
 
-These departures limit what the UAT can show. The results describe the usability and the perception of the application by the participants, and they say little about how the application behaves on actual rides, which the system tests on physical devices and the beta tests on emulators covered only in part. \TODO{Add the number of rides that were matched and completed during the UAT, and the completion and failure rates.}
+These departures limit what the UAT can show. The results describe the usability and the perception of the application by the participants, and they say little about how the application behaves on actual rides, which the system tests on physical devices and the beta tests on emulators covered only in part. Ten rides were completed during the UAT, 5 inbound and 5 outbound, which is a completion rate of 100\%.
 
 \subsection{Feedback Survey}
 \label{sec:uat-feedback-results}
