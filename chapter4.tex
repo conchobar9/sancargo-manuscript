@@ -1,6 +1,6 @@
 \chapter{Results and Discussion}
 
-This chapter reports the results gathered so far. The alpha testing results (unit and system testing) and the beta testing results are as of mid-November 2026. The user acceptance testing (UAT) has been carried out, and the results of its preliminary survey are reported below. The results of its feedback survey are not yet reported, and its section is marked for completion.
+This chapter reports the results gathered so far. The alpha testing results (unit and system testing) and the beta testing results are as of mid-November 2026. The user acceptance testing (UAT) has been carried out, and the results of its preliminary survey and feedback survey are reported below.
 
 \section{AI Mood Performance}
 \label{sec:ai-results}
@@ -573,7 +573,75 @@ These departures limit what the UAT can show. The results describe the usability
 
 \subsection{Feedback Survey}
 \label{sec:uat-feedback-results}
-\TODO{UAT feedback survey results: the System Usability Scale average (target 68 or higher), the experience ratings, the open responses, and the severity of the problems reported by participants.}
+All 46 participants answered the feedback survey. Thirty-nine (84.8\%) never use ridesharing applications and 7 (15.2\%) sometimes do, so most ratings come from people who were new to this kind of application, as in the beta testing.
+
+\textbf{System Usability Scale.} A SUS score could be computed for 43 of the 46 participants. Three participants left statement 7 blank, so their scores were not computed and are not counted. The mean SUS score was 79.9 (standard deviation 4.6, median 80.0), against the target of 68 or higher (Section~\ref{sec:survey}). The lowest score was 70.0 and the highest was 87.5, so all 43 scores were above the usual benchmark of about 68 for average usability. Table~\ref{tab:uat-sus} gives the mean answer to each statement. The statements about difficulty were answered low and those about ease were answered high: the participants disagreed that the application was complex (1.67), that they needed technical support (1.61), and that it was inconsistent (1.41), and they agreed that it was easy to use (4.26) and that they felt confident (4.43). The lowest agreement was with statement 7, that most people would learn to use it very quickly (3.84).
+
+\begin{table}[htbp]
+    \centering
+    \caption{Mean answer to each System Usability Scale statement (1 = strongly disagree, 5 = strongly agree)}\label{tab:uat-sus}
+    \small
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.62\textwidth}|c|c|}
+        \hline
+        \textbf{Statement} & \textbf{Answers} & \textbf{Mean} \\
+        \hline
+        1. I would like to use SanCarGo frequently. & 46 & 4.28 \\
+        \hline
+        2. I found SanCarGo unnecessarily complex. & 46 & 1.67 \\
+        \hline
+        3. I thought SanCarGo was easy to use. & 46 & 4.26 \\
+        \hline
+        4. I would need the support of a technical person to use SanCarGo. & 46 & 1.61 \\
+        \hline
+        5. The various functions in SanCarGo were well integrated. & 46 & 4.39 \\
+        \hline
+        6. There was too much inconsistency in SanCarGo. & 46 & 1.41 \\
+        \hline
+        7. Most people would learn to use SanCarGo very quickly. & 43 & 3.84 \\
+        \hline
+        8. I found SanCarGo very cumbersome to use. & 46 & 2.02 \\
+        \hline
+        9. I felt very confident using SanCarGo. & 46 & 4.43 \\
+        \hline
+        10. I needed to learn a lot of things before I could get going with SanCarGo. & 46 & 2.41 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Experience ratings.} Table~\ref{tab:uat-exp} gives the averages of the experience statements, rated from 1 to 5. All were above 3.8. The highest was that the error messages told the participant what to do next (4.57), followed by the understanding of why location and microphone access were requested (4.54), and the lowest was that the emergency help button was easy to find (3.85), the only average below 4. \TODO{Add the result of the seventh statement, on how safely personal information was handled, which has no answers in the data.}
+
+\begin{table}[htbp]
+    \centering
+    \caption{UAT experience ratings (average of 46 participants)}\label{tab:uat-exp}
+    \small
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{0.72\textwidth}|c|}
+        \hline
+        \textbf{Statement} & \textbf{Average (1 to 5)} \\
+        \hline
+        The app responded quickly & 4.30 \\
+        \hline
+        Notifications arrived when I expected them & 4.48 \\
+        \hline
+        The error messages told me what to do next & 4.57 \\
+        \hline
+        The screens and the map were easy to read & 4.39 \\
+        \hline
+        The emergency help button was easy to find & 3.85 \\
+        \hline
+        I understood why the app asked for location access (and the microphone, for the driver) & 4.54 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\textbf{Open responses.} All 46 participants answered that the application did not crash, freeze, or lose their place. Thirty-five participants (76.1\%) answered that they would use SanCarGo to get to or from campus and 11 (23.9\%) answered maybe; none answered no. The reasons for maybe were that it depends on how many drivers are available or using the application, on the class schedule, on whether it covers the area where the participant lives, on more pickup points, and on the application staying reliable.
+
+Thirty-five participants named nothing confusing. The others named what Ride Tokens are, finding the token history, how the mood chip works, what the status messages meant, where to start a new request, knowing when the driver accepted, waiting after sending a request, typing a destination against dropping a pin, unclear error messages, and, in two answers, the emulator (setting its location, and which emulator was the driver).
+
+What the participants liked most was the ease and clarity of the flow (13 answers, including the welcome tutorial, clear buttons, and clear trip steps), the look and readability of the screens (6), speed, notifications, and real-time updates (7), the map and the driver information such as name, plate, rating, and chat (5), the safety features such as the emergency button (3), the Ride Token and CES rewards (3), that no payment is involved (2), that the application is made for USC students (2), its reliability (3), the mood detection (1), and the destination search (1).
+
+Twenty-four participants suggested no change. The suggestions of the others were more pickup and drop-off areas or a search for places (5), an arrival time or a countdown for the driver (3), visual changes such as brighter colors, a dark mode, and larger text (4), a tutorial or walkthrough for new users (2), more mood options (2), clearer error messages, an easier way to find the chat, a sound for new requests, a display of the number of passengers waiting, staying logged in longer, and a quick help button (one answer each).
 
 \section{Discussion}
 The alpha testing results show that the core logic of the application works as designed. The automated checks of ride matching and the Ride Token system (Objectives 2 and 3) all passed, and the whole-system cases (Objective 1) all passed on the emulator and on the Android phone, and on the two iPhones all the cases that could be run passed (the four notification cases could not be tested on iOS), with the matching, token, notification, and safety flows behaving as specified on the devices that could receive notifications. The response times of about one to two seconds for requests and acceptances are short enough for a ride-matching interaction.
@@ -582,4 +650,4 @@ Read against the test levels of ISO/IEC/IEEE 29119 used as the reference framewo
 
 The beta results are positive. All required tasks passed for every tester, every task result that was recorded as Pass or Fail was a Pass, no crashes were reported, and the experience ratings were all above 4 out of 5, which suggests that testers who had mostly never used a ridesharing application could complete the main ride flow. The main weakness they pointed to was the mood feature: its classification, what to expect from it, and its buttons were mentioned among both the most confusing parts and the improvements wanted, which agrees with the rating check of Section~\ref{sec:ai-rating}, where the Lively and Calm labels of the AI did not match the labels of the raters. The models themselves ran as intended on the phones: the golden clips were reproduced on one Android phone and one iPhone (Section~\ref{sec:ai-phones}).
 
-The results also show what is not yet proven. Three system cases were run for one round only. The beta rides were played on emulators with simulated GPS, and the group was small, so the results do not show how the application behaves with real GPS on a moving vehicle. Finally, Objective 4, the evaluation with Computer Engineering students, depends on the UAT results, which are not yet reported. The UAT also reached 46 students, was held for one week and not the planned two, and included only a few actual rides (Section~\ref{sec:uat-conduct}), so it will say more about the usability of the application than about its behavior on rides. \TODO{Rewrite this discussion after the UAT and survey results are in, and relate the findings to the related literature in Chapter 2.}
+The results also show what is not yet proven. Three system cases were run for one round only. The beta rides were played on emulators with simulated GPS, and the group was small, so the results do not show how the application behaves with real GPS on a moving vehicle. Finally, Objective 4, the evaluation with Computer Engineering students, is met in part by the UAT. The mean SUS score of 79.9 was above the target of 68, no participant reported a crash, and every experience average was above 3.8, with the emergency button the least easy to find (3.85). The UAT, however, reached 46 students, was held for one week and not the planned two, and included only a few actual rides (Section~\ref{sec:uat-conduct}), and most participants had never used a ridesharing application. The results therefore say more about the usability of the application than about its behavior on rides, and the narrow spread of the SUS scores (standard deviation 4.6) comes from a single group of students of one department. \TODO{Rewrite this discussion after the UAT and survey results are in, and relate the findings to the related literature in Chapter 2.}
