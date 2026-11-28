@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1960" height="930" viewBox="0 0 1960 930" font-family="Inter, sans-serif">
+<defs><marker id="ah" markerUnits="userSpaceOnUse" markerWidth="20" markerHeight="20" refX="18" refY="10" orient="auto"><path d="M0,1 L19,10 L0,19 z" fill="#2c3e50"/></marker></defs>
+<rect width="1960" height="930" fill="#ffffff"/>
+<text x="980.0" y="54" text-anchor="middle" font-size="42" font-weight="700" fill="#1f2d3d">Mood detection and matching pipeline</text>
+<rect x="30" y="255.0" width="235" height="330" rx="18" fill="#d6e8f5" stroke="#2c3e50" stroke-width="3.5"/>
+<text x="147.5" y="346.5" text-anchor="middle" font-weight="700" font-size="30" fill="#1f2d3d">1&#160;&#160;Capture</text>
+<text x="147.5" y="397.5" text-anchor="middle" font-size="25" fill="#1f2d3d">Microphone</text>
+<text x="147.5" y="433.75" text-anchor="middle" font-size="25" fill="#1f2d3d">5.295 s window</text>
+<text x="147.5" y="470.0" text-anchor="middle" font-size="25" fill="#1f2d3d">(84,720 samples,</text>
+<text x="147.5" y="506.25" text-anchor="middle" font-size="25" fill="#1f2d3d">16 kHz, mono)</text>
+<rect x="330" y="255.0" width="255" height="330" rx="18" fill="#d6e8f5" stroke="#2c3e50" stroke-width="3.5"/>
+<text x="457.5" y="346.5" text-anchor="middle" font-weight="700" font-size="30" fill="#1f2d3d">2&#160;&#160;Sound type</text>
+<text x="457.5" y="397.5" text-anchor="middle" font-size="25" fill="#1f2d3d">YAMNet scores</text>
+<text x="457.5" y="433.75" text-anchor="middle" font-size="25" fill="#1f2d3d">Speech (class 0)</text>
+<text x="457.5" y="470.0" text-anchor="middle" font-size="25" fill="#1f2d3d">Music (class 132)</text>
+<text x="457.5" y="506.25" text-anchor="middle" font-size="25" fill="#1f2d3d">mean of 10 frames</text>
+<rect x="660" y="105" width="470" height="185" rx="18" fill="#d6e8f5" stroke="#2c3e50" stroke-width="3.5"/>
+<text x="895.0" y="160.9" text-anchor="middle" font-weight="700" font-size="28" fill="#1f2d3d">Speech score ≥ 0.15</text>
+<text x="895.0" y="210.9" text-anchor="middle" font-size="24" fill="#1f2d3d">Speech head (x-vector):</text>
+<text x="895.0" y="245.7" text-anchor="middle" font-size="24" fill="#1f2d3d">reading &gt; 0 → Lively, else Calm</text>
+<rect x="660" y="327.5" width="470" height="185" rx="18" fill="#d6e8f5" stroke="#2c3e50" stroke-width="3.5"/>
+<text x="895.0" y="383.4" text-anchor="middle" font-weight="700" font-size="28" fill="#1f2d3d">else Music score ≥ 0.20</text>
+<text x="895.0" y="433.4" text-anchor="middle" font-size="24" fill="#1f2d3d">Music head (YAMNet):</text>
+<text x="895.0" y="468.2" text-anchor="middle" font-size="24" fill="#1f2d3d">reading &gt; 5.0 → Lively, else Calm</text>
+<rect x="660" y="650" width="470" height="185" rx="18" fill="#d6e8f5" stroke="#2c3e50" stroke-width="3.5"/>
+<text x="895.0" y="705.9" text-anchor="middle" font-weight="700" font-size="28" fill="#1f2d3d">else</text>
+<text x="895.0" y="755.9" text-anchor="middle" font-size="24" fill="#1f2d3d">Quiet</text>
+<text x="895.0" y="790.6999999999999" text-anchor="middle" font-size="24" fill="#1f2d3d">(no speech or music event)</text>
+<rect x="1215" y="255.0" width="290" height="330" rx="18" fill="#d6e8f5" stroke="#2c3e50" stroke-width="3.5"/>
+<text x="1360.0" y="346.5" text-anchor="middle" font-weight="700" font-size="30" fill="#1f2d3d">3&#160;&#160;Confirm</text>
+<text x="1360.0" y="397.5" text-anchor="middle" font-size="25" fill="#1f2d3d">Stored label</text>
+<text x="1360.0" y="433.75" text-anchor="middle" font-size="25" fill="#1f2d3d">changes only after</text>
+<text x="1360.0" y="470.0" text-anchor="middle" font-size="25" fill="#1f2d3d">2 identical new</text>
+<text x="1360.0" y="506.25" text-anchor="middle" font-size="25" fill="#1f2d3d">labels in a row</text>
+<rect x="1560" y="255.0" width="170" height="330" rx="18" fill="#fbe9d0" stroke="#2c3e50" stroke-width="3.5"/>
+<text x="1645.0" y="370.35" text-anchor="middle" font-weight="700" font-size="28" fill="#1f2d3d">4&#160;&#160;Store</text>
+<text x="1645.0" y="418.35" text-anchor="middle" font-size="22" fill="#1f2d3d">moodTag</text>
+<text x="1645.0" y="450.25" text-anchor="middle" font-size="22" fill="#1f2d3d">in driver_</text>
+<text x="1645.0" y="482.15000000000003" text-anchor="middle" font-size="22" fill="#1f2d3d">availability</text>
+<rect x="1775" y="255.0" width="160" height="330" rx="18" fill="#fbe9d0" stroke="#2c3e50" stroke-width="3.5"/>
+<text x="1855.0" y="370.35" text-anchor="middle" font-weight="700" font-size="28" fill="#1f2d3d">5&#160;&#160;Match</text>
+<text x="1855.0" y="418.35" text-anchor="middle" font-size="22" fill="#1f2d3d">matchRide</text>
+<text x="1855.0" y="450.25" text-anchor="middle" font-size="22" fill="#1f2d3d">fail-open</text>
+<text x="1855.0" y="482.15000000000003" text-anchor="middle" font-size="22" fill="#1f2d3d">filter</text>
+<line x1="265" y1="420" x2="326" y2="420" stroke="#2c3e50" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="585" y1="395.5" x2="658" y2="197.5" stroke="#2c3e50" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="1130" y1="197.5" x2="1213" y2="350" stroke="#2c3e50" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="585" y1="420.0" x2="658" y2="420.0" stroke="#2c3e50" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="1130" y1="420.0" x2="1213" y2="420" stroke="#2c3e50" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="585" y1="444.5" x2="658" y2="742.5" stroke="#2c3e50" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="1130" y1="742.5" x2="1213" y2="490" stroke="#2c3e50" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="1505" y1="420" x2="1556" y2="420" stroke="#2c3e50" stroke-width="4" marker-end="url(#ah)"/>
+<line x1="1730" y1="420" x2="1771" y2="420" stroke="#2c3e50" stroke-width="4" marker-end="url(#ah)"/>
+<path d="M30,848 L30,870 L1505,870 L1505,848" fill="none" stroke="#235b8c" stroke-width="5"/>
+<text x="767.5" y="914" text-anchor="middle" font-size="27" fill="#235b8c">On the driver’s phone, back to back while the driver is available, until the driver accepts a request</text>
+<path d="M1560,848 L1560,870 L1935,870 L1935,848" fill="none" stroke="#b9770e" stroke-width="5"/>
+<text x="1747" y="914" text-anchor="middle" font-size="27" fill="#b9770e">In the cloud</text>
+</svg>
