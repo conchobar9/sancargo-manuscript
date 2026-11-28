@@ -59,9 +59,10 @@ On the 767 PMEmo clips, 0.739 of the clips are rated above 0.5. Table~\ref{tab:a
 \begin{table}[htbp]
     \centering
     \caption{Music head on PMEmo (767 chorus clips, never used for training)}\label{tab:ai-pmemo}
-    \small
+    \footnotesize
+    \setlength{\tabcolsep}{3pt}
     \renewcommand{\arraystretch}{1.2}
-    \begin{tabular}{|>{\raggedright\arraybackslash}p{.30\textwidth}|c|c|c|c|c|c|}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.26\textwidth}|c|c|c|c|c|c|}
         \hline
         \textbf{Head} & \textbf{Spearman} & \textbf{AUC} & \textbf{Calls Lively} & \textbf{Calm found} & \textbf{Lively found} & \textbf{Balanced} \\
         \hline
@@ -85,9 +86,10 @@ Table~\ref{tab:ai-speechres} gives the leave-one-actor-out validation over all 2
 \begin{table}[htbp]
     \centering
     \caption{Speech head, three embeddings with a linear head and with a small network (leave one actor out)}\label{tab:ai-speechres}
-    \small
+    \footnotesize
+    \setlength{\tabcolsep}{3pt}
     \renewcommand{\arraystretch}{1.2}
-    \begin{tabular}{|>{\raggedright\arraybackslash}p{.34\textwidth}|c|c|c|c|c|}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{.26\textwidth}|c|c|c|c|c|}
         \hline
         \textbf{Embedding and head} & \textbf{CCC (SD)} & \textbf{Calm found} & \textbf{Lively found} & \textbf{Balanced} & \textbf{Neutral read below 0} \\
         \hline
@@ -151,7 +153,8 @@ Table~\ref{tab:ai-sim} gives the result for updates every 5.295 seconds. At $N=1
 \begin{table}[htbp]
     \centering
     \caption{Simulated stored label, updates every 5.295 seconds (300 timelines for each row)}\label{tab:ai-sim}
-    \small
+    \footnotesize
+    \setlength{\tabcolsep}{3pt}
     \renewcommand{\arraystretch}{1.2}
     \begin{tabular}{|c|l|c|c|c|c|c|}
         \hline
@@ -363,7 +366,7 @@ A Pass means that the application behaved as the expected result said, in the se
 
 \section{Alpha Testing: Unit Testing}
 \label{sec:unit-results}
-Unit testing was run with \texttt{flutter test} and the Cloud Functions test suite. All 390 Flutter tests passed on the final build, with no failures and none skipped, which is a 100\% pass rate. Of the nine Cloud Functions verification scripts, six were re-run on the final build and all passed (matchRide, geofence, Places, Ride Tokens, Routes API, and alternative drop-off ranking). The two security rules scripts and the fuel price parser script were not re-run for this build. Table~\ref{tab:unit} shows the Flutter tests by area.
+Unit testing was run with \texttt{flutter test} and the Cloud Functions test suite. All 390 Flutter tests passed on the final build, with no failures and none skipped, which is a 100\% pass rate. All nine Cloud Functions verification scripts were run on the final build and all passed (matchRide, geofence, Places, Ride Tokens, Routes API, alternative drop-off ranking, the Firestore and Storage security rules, and the fuel price parser). Table~\ref{tab:unit} shows the Flutter tests by area.
 
 \begin{table}[htbp]
     \centering
@@ -387,7 +390,7 @@ Unit testing was run with \texttt{flutter test} and the Cloud Functions test sui
 
 \section{Alpha Testing: System Testing}
 \label{sec:system-results}
-System testing ran 32 cases. On the emulators, all 32 passed on the first run, with none failed (a 100\% first-run pass rate). On the three physical devices (a Samsung Galaxy A06 5G, an iPhone 17, and an iPhone 15 Pro Max), each case was run in five rounds and passed only when all five rounds succeeded. All 32 cases passed on the Android phone. The iPhones could not receive push notifications, because the proponents used free Apple IDs (Section~\ref{sec:scope}), so the four notification cases (S-E1 to S-E4) could not be tested on them and are marked N/A. The other 28 cases passed on both iPhones, with none failed. Three cases (S-B5, S-B7, and S-D2) were run for one round only. Table~\ref{tab:system} shows the results by area.
+System testing ran 32 cases. On the emulator, all 32 passed on the first run, with none failed (a 100\% first-run pass rate). On the three physical devices (a Samsung Galaxy A06 5G, an iPhone 17, and an iPhone 15 Pro Max), each case was run in five rounds and passed only when all five rounds succeeded. All 32 cases passed on the Android phone. The iPhones could not receive push notifications, because the proponents used free Apple IDs (Section~\ref{sec:scope}), so the four notification cases (S-E1 to S-E4) could not be tested on them and are marked N/A. The other 28 cases passed on both iPhones, with none failed. Three cases (S-B5, S-B7, and S-D2) were run for one round only. Table~\ref{tab:system} shows the results by area.
 
 \begin{table}[htbp]
     \centering
@@ -444,7 +447,7 @@ The main limit found in alpha testing was the difficulty of performing matched r
 Twelve volunteers were recruited and all twelve finished the feedback survey. Each tester used one physical device with SanCarGo installed, taken from the ten devices in Table~\ref{tab:betadevices}, and two Android emulators, one playing the passenger and one the driver. The physical device was used for the tasks that did not involve inbound or outbound trips, and the emulators were used for the trips. The iPhones could not show push notifications (Section~\ref{sec:scope}), so the testers tried the notification and chat tasks on the emulators, which can receive them. Only four iPhones were available, so the iOS testers shared devices. The testers signed up themselves, using dummy accounts in the USC email domain (usc.edu.ph) whose credentials the proponents gave them. The average session lasted 40 minutes, against the 45 minutes planned. Eleven of the twelve testers (91.7\%) never use ridesharing applications, and one (8.3\%) sometimes does, so most ratings come from people new to this kind of application.
 
 \subsection{Task Results}
-Overall, 97.2\% of the task results were Pass, above the 80\% target of Table~\ref{tab:betapass}. All of the required tasks (T1 to T3 and W1 to W11) were reported as Pass by every tester. Of the optional tasks (O1 to O3), 91.7\% were reported as Pass and 8.3\% as Could not try (three task results in total). No crashes were reported, so the condition of no crash on the core tasks was met.
+Overall, all of the task results recorded as Pass or Fail were Pass (201 of 201, or 100\%), above the 80\% target of Table~\ref{tab:betapass}. All of the required tasks (T1 to T3 and W1 to W11) were reported as Pass by every tester. Of the optional tasks (O1 to O3), 91.7\% were reported as Pass and 8.3\% as Could not try (three task results in total), which are left out of the pass rate as Table~\ref{tab:resultlabels} states. No crashes were reported, so the condition of no crash on the core tasks was met.
 
 \subsection{Experience Ratings}
 Testers rated seven statements about their experience from 1 (strongly disagree) to 5 (strongly agree). Table~\ref{tab:beta-ratings} gives the averages. All were above 4. The highest was the understanding of why location and microphone access are requested (4.6), and the lowest was the readability of the screens and the map (4.1).
@@ -503,10 +506,10 @@ These departures limit what the UAT can show. The results describe the usability
 \TODO{UAT feedback survey results: the System Usability Scale average (target 68 or higher), the experience ratings, the open responses, and the severity of the problems reported by participants.}
 
 \section{Discussion}
-The alpha testing results show that the core logic of the application works as designed. The automated checks of ride matching and the Ride Token system (Objectives 2 and 3) all passed, and the whole-system cases (Objective 1) all passed on the emulators and on the Android phone, and on the two iPhones all the cases that could be run passed (the four notification cases could not be tested on iOS), with the matching, token, notification, and safety flows behaving as specified on the devices that could receive notifications. The response times of about one to two seconds for requests and acceptances are short enough for a ride-matching interaction.
+The alpha testing results show that the core logic of the application works as designed. The automated checks of ride matching and the Ride Token system (Objectives 2 and 3) all passed, and the whole-system cases (Objective 1) all passed on the emulator and on the Android phone, and on the two iPhones all the cases that could be run passed (the four notification cases could not be tested on iOS), with the matching, token, notification, and safety flows behaving as specified on the devices that could receive notifications. The response times of about one to two seconds for requests and acceptances are short enough for a ride-matching interaction.
 
-Read against the test levels of ISO/IEC/IEEE 29119 used as the reference framework in Section~\ref{sec:phases}, the evidence is uneven. The unit level is complete: all automated checks passed. The system level is complete on the emulators and on the Android phone, and complete on the two iPhones except for the four notification cases, with each case recorded as a step, an expected result, and an actual result per device, as the standard's documentation practice suggests. Beta testing has produced results from 12 outside volunteers, but the acceptance level, which is the one that tests the application with its intended users, has no results yet. The mood AI was evaluated on held-out data, on mixed audio, on the phones, and in a rating check on car recordings, which is the kind of evidence the standard's guidance on AI-based systems (Part 11) points to for a component that cannot be verified by fixed expected outputs alone~\cite{iso29119site}. The testing was not assessed for conformance with the standard, so these statements describe how the evidence is organized and do not claim certification.
+Read against the test levels of ISO/IEC/IEEE 29119 used as the reference framework in Section~\ref{sec:phases}, the evidence is uneven. The unit level is complete: all automated checks passed. The system level is complete on the emulator and on the Android phone, and complete on the two iPhones except for the four notification cases, with each case recorded as a step, an expected result, and an actual result per device, as the standard's documentation practice suggests. Beta testing has produced results from 12 outside volunteers, but the acceptance level, which is the one that tests the application with its intended users, has no results yet. The mood AI was evaluated on held-out data, on mixed audio, on the phones, and in a rating check on car recordings, which is the kind of evidence the standard's guidance on AI-based systems (Part 11) points to for a component that cannot be verified by fixed expected outputs alone~\cite{iso29119site}. The testing was not assessed for conformance with the standard, so these statements describe how the evidence is organized and do not claim certification.
 
-The beta results are positive. All required tasks passed for every tester, 97.2\% of all task results were Pass, no crashes were reported, and the experience ratings were all above 4 out of 5, which suggests that testers who had mostly never used a ridesharing application could complete the main ride flow. The main weakness they pointed to was the mood feature: its classification, what to expect from it, and its buttons were mentioned among both the most confusing parts and the improvements wanted, which agrees with the rating check of Section~\ref{sec:ai-rating}, where the Lively and Calm labels of the AI did not match the labels of the raters. The models themselves ran as intended on the phones: the golden clips were reproduced on one Android phone and one iPhone (Section~\ref{sec:ai-phones}).
+The beta results are positive. All required tasks passed for every tester, every task result that was recorded as Pass or Fail was a Pass, no crashes were reported, and the experience ratings were all above 4 out of 5, which suggests that testers who had mostly never used a ridesharing application could complete the main ride flow. The main weakness they pointed to was the mood feature: its classification, what to expect from it, and its buttons were mentioned among both the most confusing parts and the improvements wanted, which agrees with the rating check of Section~\ref{sec:ai-rating}, where the Lively and Calm labels of the AI did not match the labels of the raters. The models themselves ran as intended on the phones: the golden clips were reproduced on one Android phone and one iPhone (Section~\ref{sec:ai-phones}).
 
 The results also show what is not yet proven. Three system cases were run for one round only. The beta rides were played on emulators with simulated GPS, and the group was small, so the results do not show how the application behaves with real GPS on a moving vehicle. Finally, Objective 4, the evaluation with Computer Engineering students, depends on the UAT results, which are not yet reported. The UAT also reached 46 students, was held for one week and not the planned two, and included only a few actual rides (Section~\ref{sec:uat-conduct}), so it will say more about the usability of the application than about its behavior on rides. \TODO{Rewrite this discussion after the UAT and survey results are in, and relate the findings to the related literature in Chapter 2.}
